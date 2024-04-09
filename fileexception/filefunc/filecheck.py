@@ -1,0 +1,7 @@
+f = open("demofiles.txt", "r")
+line1 = f.readline().rstrip()
+print(type(line1))
+print(line1)
+line2 = f.readline().rstrip()
+print(line2)
+print(line2.split("=")[1])

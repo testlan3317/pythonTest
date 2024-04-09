@@ -1,0 +1,75 @@
+# journal entries that have been collected since the most recent reboot
+journalctl -b
+
+# when saving previous boots is enabled on your server, journalctl provides some commands to help with boots as a unit of division. 
+
+# --list-boots , this will display a line for each boot.
+journalctl --list-boots
+
+# In the output: the 2nd column is the boot id. the 1st column is the offset for the boot that can be used to easily reference the boot with journalctl.
+
+# to see the journal from the previous boot, use the -1 relative pointer with the -b flag
+journalctl -b -1
+
+#or can use the id
+journalctl -b id#
+
+# time window
+journalctl --since "2015-01-10 17:15:00"
+
+journalctl --since "2015-01-10" --until "2015-01-11 03:00"
+
+# To get the data from yesterday
+journalctl --since yesterday
+
+# if you received reports of a service interruption starting at 9:00 AM and continuing until an hour ago
+journalctl --since 09:00 --until "1 hour ago"
+
+# filter by messgae interest
+# 1. by unit
+journalctl -u nginx.service
+
+journalctl -u ngnix.service --since today
+
+# take advantage of the journal's ability to interleave records from various units. 
+# for instance, if your nginx process is connected to a PHP FPM unit to process dynamic content, you can merget the entries from both in chronological order
+
+journalctl -u nginx.service -u php-fpm.service --since today
+
+
+
+# 2. By Process, User, or Group ID
+journalctl _PID=8088
+
+# id -u www-data
+journalctl _UID=33
+
+
+# The systemd journal has many fields that can be used for filtering. 
+# The leading underscore indicates that the _PID field is of the latter type. 
+# man systemd.journal-fields
+
+# -F option can be use to show all the available values for a given journal field. (**very useful**)
+journalctl -F _GID
+
+# Diplaying the Kernel Messages:  (-k: for kernel)
+journalctl -k
+
+journalctl -k -b -1
+
+# display recent logs
+journalctl -n 20
+
+# if the path leads to an executable, journalctl will display all of the entries that involve the executable in question.
+journalctl /usr/bin/bash
+
+# you can find out the amount of space that the journal currently occupying on disk
+journalctl --disk-usage
+
+# Delete old logs:
+# --vacuum-size: shrink your journal by indicating a size
+journalctl --vacuum-size=1G
+
+#--vacuum-time: any tiem beyond that time are deleted
+# below will shrink the logs staying over a 1 year long
+journalctl --vacuum-time=1years
