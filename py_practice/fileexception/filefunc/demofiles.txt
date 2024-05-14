@@ -1,6 +1,0 @@
-[global]
-datacenter=192.168.0.1
-username=test
-password=123456
-version=1.0
-email=admin@goct.com
