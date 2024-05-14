@@ -1,0 +1,4 @@
+Hello this is just a test
+we play grooovy for fun.
+The language is similar to java
+let's do it~

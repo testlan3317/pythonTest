@@ -1,0 +1,155 @@
+# Awkcommand
+#
+# # awk options program file
+# -F fs : to specify a file separator (e.g. -F: means use : as a separator)
+# -f file: to specify a file that contains awk script
+# -v var=value: To declare a variable
+
+# Read awk scripts:
+awk '{print "Welcome to awk command tutorial"}'
+
+# if you type anything, it returns the same welcome string. To terminate the program: ctrl+D
+#
+# using variables
+# 1. create a file named myfile
+This is a test
+This is the second test.
+This is the third test.
+This is the fourth test.
+
+# $0: for the whole line
+# $1: for the first field
+# $2: for the 2nd field
+# $n: for the nth field
+
+awk '{print $1}' myfile
+
+awk -F: '{print $1}' /etc/passwd
+
+# Using Multiple Commands: 
+# notice: it uses ; to separate
+
+echo "Hello Tom" | awk '{$2="Adam"; print $0}'
+
+# Reading The Script From a file
+# you can type your awk script in a file and specify that file using the "-f" option.
+#
+# create a script named "testfile"
+{print $1 " home at " $6}
+awk -F: -f testfile /etc/passwd
+
+# PRE-PROCESS and POST-PROCESSING
+awk 'BEGIN {print "The file contents:"}
+{print $0}
+END {print "File footer"}' myfile
+
+#-------------------------------------
+#-----------special variables---------
+# ARGC: retrieves the number of passed parameters
+# ARGV: retrieves the command line parameters.
+# ENVIRON: Array of the shell environment variables and corresponding values. 
+# NF: Fields count of the line being processed by awk
+# NR: Retrieves total count of processed records.
+# FNR: The record which is processed. 
+# FILENAME: The file name that is processed by awk.
+#
+
+awk 'BEGIN{print ARGC, ARGV[1]}' myfile
+
+awk '
+BEGIN{
+print ENVIRON["PATH"]
+}'
+
+#-------------------------------------
+# Structured Commands:
+# create a file named testfile2 with below content
+# 10
+# 15
+# 6
+# 33
+# 45
+
+awk '{if ($1 > 30) print $1}' testfile2
+
+
+# check status of docker
+# awk -v tgt="Up" 's=index($0,tgt){print substr($0,s,length(s))}'
+# -v: variable define
+# awk -v home=$HOME '{print "my home is " home}'
+ng_status=$( sudo docker ps -a | grep nginx_gui | awk -v tgt="up" 's=index($0,tgt){print substr($0,s,length(s))}'
+
+
+# if 
+awk '{
+
+if ($1 > 30)
+{
+x=$1 * 3
+} else
+{
+x = $1 /2
+print x
+}}' testfile
+
+# while loop
+awk '{
+sum = 0
+i = 1
+while (i < 5)
+{
+sum += $i
+if (i ==3)
+break
+i++
+}
+average = sum / 3
+print "Average is:",average
+}' testfile
+
+########################################
+# for loop
+awk '{
+
+total = 0
+for(var = 1; var < 5; var++_
+{
+total+=$var
+}
+avg = total/3
+print "Average:",avg
+}' testfile
+
+##########################################
+# Formatted Printing
+# syntax:  %[modifier]control-letter
+# c: prints numeric output as a string
+# d: prints an integer value
+# e: prints scientific numbers
+# f: prints float values
+# o: prints an octal value
+# s: prints a text string.
+#
+awk 'BEGIN{
+x = 100 * 100
+
+printf "the result is: %e\n", x
+}'
+
+#######################################
+# String Functions. if write in the same line, do not forget the ;
+awk 'BEGIN{x="likegeeks"; print toupper(x)}'  
+
+# user defined functions
+awk '
+function myfunc()
+{
+printf "The user %s has home path at %s\n", $1,$6
+}
+
+BEGIN{FS=":"}
+{
+myfunc()
+}' /etc/passwd
+##########################################
+

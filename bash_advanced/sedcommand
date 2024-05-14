@@ -1,0 +1,81 @@
+# s: indicates the search and replace task
+# here only replace the first match
+#
+echo "Bash Scripting Language Bash"| sed 's/Bash/Perl/'
+
+# sed command can be used to substitution any part of a file content also. 
+# so create a file weekday.txt with following content:
+Monday
+Tuedsay
+Wednesday
+Thursday
+Friday
+Saturday
+Sunday
+
+sed 's/Sunday/Sunday is holiday/' weekday.txt
+
+
+# replace all matched of a text in a particular line of a file using 'g' option
+# create a file "python.txt"
+Python is a very popular language.
+Python is easy to use. Python is easy to learn.
+Python is a cross-platform language
+
+# replace all occurrences of Python in the 2nd line of the file python.txt
+sed '2 s/Python/perl/g' python.txt
+
+# if you only want to replace the 2nd matched Python in the 2nd line
+sed '2 s/Python/per/g2' python.txt
+
+# replace full path of a file with just the filename
+echo "/home/ubuntu/temp/myfile.txt"|sed 's/.*\///'
+
+# Important: Replace the last occurrence only of a match on each line
+# create a text file named "lang.txt"
+Bash Programming Language. Python Programming Language. Perl Programming Language.
+Hypertext Markup Language.
+Extensible Markup Programming Language.
+
+sed 's/\(.*\)Programming/\1Scripting/' lang.txt
+
+# \(.*\)Programming: will create a capture group with all the text matching the line
+# This capture group is stored as '\1' and referenced in the replace part of sed:\1Scripting.
+# The previous command replaced the last Programming to Scripting. 
+#
+
+
+# Important: Substitute text but only if some other text is found in the string
+# -e: expression
+# create a file named dept.txt
+CSE - Count
+EEE - Count
+Civil - Count
+
+# Here, the text, 'Count' will be replaced by 100 in the line CSE
+# Count will be replaced by 70 in the line EEE
+sed -e '/CSE/ s/Count/100/; /EEE/ s/Count/70/;' dept.txt
+
+# Important substitute text but only if some other text is not found in the string
+# -i: 
+# For some peace of mind, sed can create a backup of the original file before it executes its command.
+# You can use the In-place option (-i) to tell sed to write the changes to the original file, but if you add a file extension to it, sed will back up the original file to a new one. It will have the same name as the original file, but with a new file extension.
+
+# e.g.
+# sed -i'.bak' '/^.*He.*$/d' geeks.txt
+
+sed -i -e '/CSE/! s/Count/80/;' dept.txt
+
+#--------I i g \U \L -----------------
+# I - case sensitive
+# i - case insensitive
+# \U - uppercase
+# \L - lowercase
+# ig can be put together.
+
+echo "I like bash programming" | sed 's/Bash/PHP/i'
+sed 's/\(linux\)/\U\1/Ig' os.text
+
+#----------grep----------------------------
+#grep -v "^$": get rid of empty line
+cat ssh_config|grep -v "^$"|grep -v "#"

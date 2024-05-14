@@ -1,0 +1,142 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Planning and configuring Security Updates
+All software contains bugs. Often, these bugs can result in a vulnerability that can expose your system to malicious users. Pakcages that have not been updated are a common 
+cause of computer intrusions. implement a plan for installing security patches in a timely manner to quickly eliminate discovered vulnerabilities, so they cannot be exploited.
+
+Test security updates when they become available and schedule them for installation. Additional controls need to be used to protect the system during the time between the release
+of the update and its installation on the system. These controls depends on the exact vulnerability, but may include additional firewall rules, the use of external firewalls, 
+or changes in the software settings.
+
+Bugs in supported packages are fixed using the errata mechanism. An erratum consists of one or more RPM packages accompanied by a brief explanation of the problem that the 
+particular erratum deals with. 
+All errata are distributed to customers with active subscriptions through the "Red Hat Subscription Management" service. Errata that address security issues are called
+"Red Hat Security Advisories"
+
+
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Redhat 8:
+Red Hat Security Advisories (RHSA) document the information about security flaws being fixed in Redhat products and services
+Each RHSA includes the following information:
+- severity
+- Type and status
+- Affected products
+- summary of fixed issues
+- Links to the tickets about the problem. Note that not all tickets are public
+- Common Vulnerabilities and Exposures (CVE) numbers and links with additional details, such as attack complexity.
+
+Redhat Customer Portal provides a list of Red Hat Security Advisories published by Red Hat. you can display details of a specific advisory by navigating to the advisory's ID from
+the list of Red Hat Security Advisories.
+
+1. Display security updates that are not installed on a host
+
+# yum updateinfo list updates security
+
+2. Display security updates installed on the host:
+
+# yum updateinfo list security --installed 
+
+If multiple updates of a single package are installed, yum lists all advisories for the package. 
+
+
+3. Displaying a specific advisory using yum
+
+# yum updateinfo info <Update ID>
+e.g. # yum updateinfo info RHSA-2019:0997
+
+
+3.1 viewlist of CVEs which affects the system by using:
+ # yum updateinfo list cves
+
+3.2. view the packages which is belongs to bugfixs
+ # yum updateinfo list bugfix 
+
+3.3 get a summary of advisories, which needs to be installed on your system
+ # yum updateinfo summary
+
+
+
+4. Installing all available security updates
+
+4.1 install security udpates using yum
+    # yum update --security
+      --security is a must, it indicates the security
+
+    Optional: list processeses that require a manual restart of the system after installing the updated packages:
+    # yum needs-restarting
+
+4.2 Installing a security update provided by a specific advisory
+    In certain situations, you might want to install only specific updates. 
+    For example, if a specific service can be updated without scheduling a downtime, you can install security updates for only this service, and install the remaining security updates later. 
+4.2.1 Install a specific advisory:
+    # yum update --advisory=<Update ID>
+    
+    Optional: List the processes that require a manual restart of the system after installing the updated packages:
+    # yum needs-restarting
+
+
+
+
+
+
+
+
+
+
+5. Installing security udpates automatically
+5.1 Install dnf-automatic using yum
+    # yum install dnf-automatic
+
+5.2 open "/etc/dnf/automatic.conf" file
+5.3 configure the upgrade_type = security option in the [commands] section:
+[commands]
+# what kind of upgrade to perform:
+# default      =   all available upgrades
+# security     =   only the security upgrades
+upgrade_type = security
+
+5.4 Enable the "systemd timer unit"
+# systemctl enable --now dnf-autmatic-install.timer
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Redhat 7:
+
+1. To check for security-related updates available for your system. 
+   # yum check-update --security
+The command return an exit value of 100 when there are any security updates available and 0 when there are not. On encountering an error, it returns 1.
+
+2. install security-related updates:
+   # yum update --security
+
+3. Applying changes introduced by installed Updates
+After downloading and installing security errata and updates, it is important to halt the usage of the old software and begin using the new software. 
+
+Application - relaunch
+
+Kernel - restart
+
+KVM - 
+when the qemu-kvm and libvirt packages are updated, it is necessary to stop all guest virtual machines, reload relevant virtualization modules (or reboot the host system),
+and restart the virtual machines.
+
+Use the "lsmod" command to determine which modules from the following are loaded: kvm, kvm-intel, or kvm-amd. 
+Then use the "modprobe -r" command to remove and subsequently the "modprobe -a" command to reload the affected modules. 
+e.g.
+# lsmod | grep kvm
+# modprobe -r kvm-intel
+# modprobe -r kvm
+# modprobe -a kvm kvm-intel
+
+Shared Libraries - 
+shared libraries are units of code, such as "glibc", that are used by a number of applications and services. Applications utilizing a shared library typically load the shared
+code when the application is initialized, so any applications using an updated library must be halted and relaunched. 
+
+To demtermine which running applications link against a particular library, use the "lsof" command
+
+# lsof library
+
+
+

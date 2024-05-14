@@ -1,0 +1,149 @@
+inheritance
+Extends: the keyword used to inherit the properties of a class. 
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+
+        st.Marks1 = 10;
+        st.name = "Joe";
+
+        println(st.name);
+    }
+}
+
+class Person{
+    public String name;
+    public Person(){}
+}
+class Student extends Person{
+    int StudentID;
+    int Marks1;
+
+    public Student(){
+        super();
+    }
+}
+
+Inner Classes
+Inner classes are defined within another classes. The enclosing class can use the inner class as usual. 
+On the other side, a inner class can access members of its enclosing class, even if they are private. 
+Classes other than the enclosing class are not allowed to access inner classes.
+
+class Example{
+    static void main(String[] args){
+        Outer outobj = new Outer();
+        outobj.name = "Joe";
+        outobj.callInnerMethod();
+    }
+}
+
+class Outer{
+    String name;
+
+    def callInnerMethod(){
+        new Inner().methodA()
+    }
+
+    class Inner{
+        def methodA(){
+            println(name);
+        }
+    }
+}
+
+Abstract Classes
+1. Abstract classes represent generic concepts, thus, they cannot be instantiated, being created to be subclassed. 
+2. Their member include fields/properties and abstract or concrete methods. 
+3. Abstract methods do not have implementation, and must be implemented by concrete subclasses. 
+4. Abstract class must be declared with "abstract" keyword. Abstract methods must also be delcared with "abstract" keyword
+
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+        st.Marks1 = 10;
+        st.name = "Joe";
+
+        println(st.name);
+        println(st.DisplayMarks());
+    }
+}
+
+abstract class Person{
+    public String name;
+    public Person(){}
+    abstract void DisplayMarks();
+}
+
+class Student extends Person{
+    int StudentID;
+    int Marks1;
+
+    public Student(){
+        super();
+    }
+
+    void DisplayMarks(){
+        println(Marks1);
+    }
+}
+
+Interfaces
+1. An interface defines a contract that a class needs to conform to.
+2. An interface only defines a list of methods that need to be implemented, but does not define the methods implementation. 
+3. An interface needs to be declared using the interface keyword. 
+4. An interface only defines method signatures. Methods of an interface are always public. 
+5. It is an error to use protected or private methods in interfaces. 
+
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+        st.Marks1 = 10;
+        println(st.DisplayMarks());
+    }
+}
+interface Marks{
+    void DisplayMarks();
+}
+
+class Student implements Marks{
+    int StudentID;
+    int Marks1;
+
+    void DisplayMarks(){
+        println(Marks1);
+    }
+}
+
+Generalized Classes
+The entire class can be generalized. 
+Note: <T> keywords placed in front of the class definition. This tells the compiler that this class can accept any type. 
+so when we declare an object of this class, we can specify a type during the declaration and that type could be replaced in the placeholder<T>
+
+class Example{
+    static void main(String[] args){
+        ListType<String> lststr = new ListType<String>();
+        lststr.set("First String");
+        println(lststr.get());
+
+        ListType<Integer> lstint = new ListType<Integer>();
+        lstint.set(1);
+        println(lstint.get());
+    }
+}
+
+public class ListType<T>{
+    private T localt;
+
+    public T get() {
+        return this.localt;
+    }
+
+    public void set(T plocal){
+        this.localt = plocal;
+    }
+}
+
+

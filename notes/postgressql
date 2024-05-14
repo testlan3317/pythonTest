@@ -1,0 +1,261 @@
+---
+Postgresql:
+
+
+sudo su postgres
+
+psql --version
+psql -l
+
+createdb newdb
+# list databases under postgres
+psql -l
+
+# get into the newdb
+psql newdb
+
+# drop db
+dropdb newdb
+
+# check version inside the newdb
+newdb#select version();
+
+# check current system time
+newdb#select now()
+
+
+# get help
+help
+\h
+\?
+\l
+\?
+
+# create table
+create table posts (title varchar(255), content text);
+
+# change table name
+alter table posts rename to new_post_table;
+
+# drop table
+drop table new_post_table;
+
+\dt : checking table info
+\q : quit
+
+
+\d table: description of table
+
+\i: import file such as db.sql
+
+\x: display horizontal
+
+\c: connect to db
+
+\h: means help. \h vacuum
+
+select pg_database_size(newdb);
+
+# print good look size details
+select pg_size_pretty(pg_database_size(newdb));
+
+
+
+create table posts(
+    title varchar(255),
+    content text
+)
+
+
+psql posts
+
+datatype:
+=====================================
+-integer
+-real
+-serial
+
+char
+varchar
+text
+
+boolean
+
+date
+time
+timestamp
+
+Array
+inet
+JSON
+XML
+=====================================
+
+create table posts (
+    id serial primary key,
+    title varchar(255) not null,
+    content text check(length(content) > 3),
+    is_draft boolean default TRUE,
+    is_del boolean default FALSE,
+    create_date timestamp default 'now'
+);
+
+#primary key (not null, unique)
+===================================
+
+insert into [table](filed,...) values(...)
+
+insert into posts(title, content) values('','');
+insert into posts(title, contnet) values('titl3','contnet3');
+select * from posts;
+
+select * from users where score > 20 and score < 30;
+select * from users where team != 'warriors';
+select * from users where player like 'kevin%';
+select * from users where play like 's_';
+
+select * from users order by team, score;
+select * from users order by score desc limit 3 offset 2;
+
+
+select * from users where score = (select max(socre) from users);
+select team, max(score) from users group by team having max(score) >=25 order by max(score);
+
+select player, length(player) from users;
+select player, concat(player, '/', team) from users;
+select substring(team, 1, 1) as "cap text" from users;
+select random();
+select * from users order by random();
+select * from users order by random() limit 1;
+
+update users set score=score+100 where team in ('warriors', 'lakers');
+delete from users where score > 30;
+
+=======================================================================
+change table structure:
+\d users;
+alter table users add fullname varchar(255);
+
+\d users;
+alter table users rename player to nba_player;
+
+\d users;
+alter table users alter nba_player type varchar(100);
+
+\d users;
+create index nba_player_index on users(nba_player);
+
+\d users;
+drop index nba_player_index;
+
+\d users;
+
+========================================================================
+create table users(
+    id serial primary key,
+    player varchar(255) not null,
+    score real,
+    team varchar(255)
+);
+
+insert into users (player, score, team) values
+('a',28.1,'warriors'),
+('b',30,'lakers');
+
+create table twitters (
+    id serial primary key,
+    user_id integer,
+    content varchar(255) not null
+)
+insert into twitter(user_id, content) values
+('1', 'hello warriors'),
+('2', "hello lakers");
+
+
+select u.player, t.content from users as u, twitters as t where u.id = t.user_id and u.id = 1;
+
+=========================================================================
+create view curry_twitters as select u.player, t.content from users as u, twitters as t where u.id = t.user_id and u.id = 1;
+
+\dv : list views
+\d currey_twitters
+
+select * from currey_twitters;
+drop view curry_twitters;
+\dv
+
+============================================================================
+Database transaction:
++begin
++commit
++rollback
+
+select * from users;
+begin;
+update users set score=50 where player = 'curry';
+update users set score=60 where player = 'lorry';
+commit;
+
+select * from users;
+begin;
+update users set score=0 where player = 'curry';
+update users set score=0 where player = 'lorry';
+rollback;
+select * from users;
+
+============================================================================
+Vaccum:
+create table vaccum_test(id int) with (autovacuum_enabled = off);
+insert into vaccum_test select * from generate_series(1,100000);
+
+select pg_size_pretty(pg_relation_size('vacuum_test'));
+
+#pg_relation_size: return the size of the table in bytes.
+
+update vacuum_test set id = id +1;  # this will double the space
+
+select pg_size_pretty(pg_relation_size('vacuum_test'));
+
+vacuum vacuum_test  # this will not return the space, just mark the intermediate space could be reused. the space is not shrinked.
+
+update vacuum_test set id = id + 1; # this will increase the space again, because the old space which could be reused is consumed by the previous command. 
+
+===============================================================================
+vacuum FULL : removes the deleted or updated records and reorders the table data
+vacuum Process:   vacuum process marks space as being available for reuse.
+
+- index bloat
+- excessive dead tuples
+
+how can we tell if table bloat is happening
+
+\x   # expanded display is on
+select * from pg_stat_user_tables;
+
+"vacuum full" will create a big problem if the table is large. it'll use table lock. may bring down the table for hours.
+
+============
+Tuning Goals:
+- cleanup dead tuples
+- minimize cleanup impact
+
+configuration vacuum depends on:
+- amount of data you manage
+- type of workload you are dealing with (number of DELETE/UPDATEs)
+
+(Default values in postgressql.conf )
+
+postgresql.conf Defaults
+autovacuum_naptime = 60s
+autovacuum_scale_factor = 0.2
+
+select * from pg_settings where name = 'old_snapshot_threshold';
+
+
+
+
+
+
+
+
+

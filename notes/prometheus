@@ -1,0 +1,169 @@
+TSDB (Time series database)
+A time series database (TSDB) is a database optimized for time-stamped or time series data. Time series data are simply 
+measurements or events that are tracked, monitored, downsampled, and aggregated over time. 
+This could be server metrics, application metrics, application performance monitoring, network data, sensor data, event,
+clicks, trades in a market, and many other analytics data.
+
+
+In Prometheus's expression language, an expression or sub-expression can evaluate to one of four types:
+
+- Instant vector: a set of time series containing a single sample for each time series, all sharing the same timestamp.
+- Range vector: a set of time series containing a range of data points over time for each time series.
+- Scalar: a simple numeric floating point value.
+- String: a simple string value, currently unused.
+
+Depending on the use-case, only some of these types are legal as the result from a user-specified expression. 
+For example, an expression that returns an "instant vector" is the only type that can be directly graphed.
+
+Literals
+
+String literals: may be specified as literals in single quotes, double quotes or backticks. 
+"this is a string"
+'these are unescaped: \n \\ \t'
+`these are not unescaped: \n' "" \t`
+
+
+Float literals: scalar float values can be written as literal integer or floating-point numbers in the format (whitespace only
+included for better readability)
+e.g. -2.43
+
+==============================================================================================
+Time Series Selectors
+instant vector selectors: in the simplest form, only a metric name is specified. 
+e.g.
+This example selects all time series that have the "http_requests_total" metric name:
+http_requests_total
+
+
+it is possible to filter these time series further by appending a comma separated list of "label matchers" in curly braces {}
+
+This example selects only those tiem series with the "http_request_total" metric name that also have the "job" label set to prometheus
+and their "group" label set to canary:
+http_request_total{job="prometheus",group="canary"}
+
+
+Label matching operators:
+1. =  select labels that are exactly equal to the provided string.
+2. != select labels that are not equal to the provided string
+3. =~ select labels that regex-match the provided string
+4. !~ select lables that do not regex-match the provided string
+
+Regex matches are fully anchored. A match of env=~"foo" is treated as env=~"^foo$"
+
+
+For example, this selects all "http_request_total" time series for staging, testing, and development environments and HTTP methods
+other than GET.
+e.g.
+http_request_total{environment=~"staging|testing|development",method!="GET"}
+
+
+Note: vector selectors must either specify a name or at least "one" label matcher that does not match the empty string.
+The following expression is illegal:
+{job=~".*"} # Bad!
+
+In contrast, these expressions are valid as they both have a selector that does not match empty label values.
+{job=~".+"}      # Good!
+{job=~".*",method="get"}   # Good!
+
+
+
+Note: Label matchers can also be applied to metric names by matching against the internal "__name__" label.
+the expression "http_requests_total" is equivalent to {__name__="http_requests_total"}. 
+Matchers other than = (!=, =~, !~) may also be used. 
+
+The following expression selects all metric that have a name starting with job:
+{__name__=~"job:.*"}
+
+
+**note**
+The metric name must not be one of the keywords: bool, on, ignoring, group_left and group_right. 
+on{}   # Bad!
+
+A workaround for this restriction is to use __name__ label:
+{__name__="on"}   # Good!
+
+
+
+Range Vector Selectors:
+Range vector iterals work like instant vector literals,
+except that they select a range of samples "back from" the current instant. 
+syntactically, 
+a "time duration" is appended in square brackets ([]) at the end of a vector selector to specify "how far back" in time values
+should be fetched for each resulting range vector element. 
+
+e.g.
+we select all the values we have recorded "within the last 5 minutes" for all time series that have the metric name "http_requests_total" and a "job" label set to "prometheus":
+
+http_requests_total{job="prometheus"}[5m]
+
+Time duration units:
+ms - milliseconds   s - seconds     m- minutes       h-hours      d- days - assuming a day has always 24h
+w - weeks-assuming a week has always 7d
+y - years-assuming a year has always 365d
+
+Time durations can be combined, by concatenation.
+5h
+1h30m
+5m
+10s
+
+
+
+Offset modifier:
+The "offset" modifier allows changing the time offset for individual instant and range vectors in a query.
+
+The following expression returns the value of "http_request_total" 5 minutes in the past relative to the current query time.
+http_request_total offset 5m
+
+
+Note: the "offset" modifier always needs to follow the selector immediately. i.e. the following would be correct:
+
+sum(http_requests_total{method="GET"} offset 5m)     # Good
+
+
+
+The same works for range vectors. This returns the 5 minute rate that "http_requests_total" had a week ago
+rate(http_request_total[5m] offset 1w)
+
+For comparisons with temporal shifts forward in time, a negative offset can be specified:
+rate(http_request_total[5m] offset -1w)
+
+
+
+@ modifier
+The "@" modifier allows chaning the evaluation time for individual instant and range vectors in a query. 
+The time supplied to the "@" modifier is a unix timestamp and described with a float literal.
+
+For example, the following expression returns the value of "http_requests_total" at 2021-01-04T07:40:00+00:00:
+http_requests_total @ 1609746000
+
+Note: the "@" modifier always needs to follow the selector immediately, i.e.
+sum(http_requests_total{method="GET"} @ 1609746000)  // Good.
+
+
+The @ modifier supports all representation of float literals described above within the limits of int64. It can also be used
+along with the offset modifier where the offset is applied relative to the @ modifier time irrespective of which modifier
+is written first. 
+i.e. These 2 queries will produce the same result. 
+
+# offset after @
+http_requests_total @ 1609746000 offset 5m
+
+# offset before @
+http_requests_total offset 5m @ 1609746000
+
+Additionally, start() and end() can also be used as values for the "@" modifier as special values. 
+Note: the "@" modifier allows a query to look ahead of its evaluation time. 
+
+http_requests_total @ start()
+rate(http_requests_total[4m] @ end())
+
+
+
+Subquery: allows you to run an instant query for a given range and resolution. The result of a subquery is a range vector.
+syntax:
+<instant_query> '[' <range> ':' [<resolution>] ']' [ @ <float_literal> ] [ offset <duration> ]
+
+
+
+

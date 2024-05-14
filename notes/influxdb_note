@@ -1,0 +1,120 @@
+docker pull influxdb
+
+docker run -d -p 8086:8086 \
+  --name influxdb2 \
+  -v $PWD/data:/var/lib/influxdb2 \
+  -v $PWD/config:/etc/influxdb2 \
+  -e DOCKER_INFLUXDB_INIT_MODE=setup \
+  -e DOCKER_INFLUXDB_INIT_USERNAME=root \
+  -e DOCKER_INFLUXDB_INIT_PASSWORD=secret-password \
+  -e DOCKER_INFLUXDB_INIT_ORG=my-init-org \
+  -e DOCKER_INFLUXDB_INIT_BUCKET=my-init-bucket \
+  -e DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=secret-token \
+  influxdb:2.6.1
+
+
+
+influx config create --config-name test-config \
+--host-url http://localhost:8086 \
+--org my-init-org \
+--token secret-token \
+--active
+
+# authenticate with username and password
+influx config create \
+-n config-test \
+-u http://localhost:8086 \
+-p example-user:example-password \
+-o example-org
+
+
+
+# go into the container
+docker exec -it influxdb /bin/bash
+
+=====================================================
+line Protocol
+measurementName, tagKey=tagValue                                  fieldKey="fieldValue"                         14658234234234
+---------------  ---------------   -                              -------------------   -                       --------------
+    |                  |           |                                   |                |                           |
+Measurement        Tag set   1st unescaped whitespace             Field set          2nd unescape whitespace    Timestamp (optional)
+
+
+
+white space and commas
+1. The 1st unescaped whitespace separates the measurement and the tagset (if there is a tag set) from the field set
+2. The 2nd unescaped whitespace separates the field set from the timestamp ( if there is a timestamp)
+3. Single tag set? use a comma following the measurement name
+4. multiple tag set? use a comma but no whitespace to separate each tagset.
+5. multiple fieldsets? use a comma but no whitespace to separate each fieldset.
+
+
+Measurement name:
+price,type=ETHUSD open=10.297,close=10.097,volume=0.03 145753944000000000
+
+the timestamp should be unix timestamp
+
+
+Data with Tag Set excluded (field Set only)
+price open=10.297,close=10.097,volume=0.03 145753944000000000
+
+ 
+bucket: Buckets are how influx DB collects and stores our data.
+
+
+
+
+
+
+
+
+
+=======================================================
+
+Below is for influxdb 1.8 (not above this version)
+
+# influx -host localhost -port 8086 -username admin -password admin
+
+
+create database demo
+
+use demo
+
+show measurements
+
+insert cpu,host=serverA,region=us_west value=0.64
+insert temperature,machine=unit42,type=assembly external=25,internal=37
+insert stock,symbol=AAPL bid=127.46,ask=127.48
+
+> select * from stock
+name: stock
+time           ask        bid    symbol
+----           ----      ----    -----
+1491231212313  127.48   127.46    AAPL
+
+show tag keys from "stock"
+show field keys from "stock"
+
+if there is no "from "stock", it'll print all the fields across all measurement
+
+
+insert cpu,host=serverA,region=us_east value=0.65
+select * from "cpu"
+time             host      region   value
+12332413414    serverA     us_west   0.64
+12213413414    serverA     us_east   0.65
+
+
+show tag values from "cpu" with key in ("region")
+name: cpu
+key    value
+---    -----
+region us_west
+region us_east
+
+
+> show retention policies
+
+show shards
+
+

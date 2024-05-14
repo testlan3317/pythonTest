@@ -1,0 +1,89 @@
+
+mastering the filtering and output redirect commands
+
+show ip route 
+
+show ip route 10.233.0.0/24
+
+show ip route 10.223.0.0 longer-prefixes
+
+show ip route 10.223.0.0 255.255.0.0 longer-prefixes
+
+show ip route 10.3.0.0 255.255.0.0 longer-prefixes
+
+show processes cpu | include IP Input
+
+                             5min   1min   5mins
+show processes cpu | exclude 0.00%  0.00%  0.00%
+
+show processes cpu | include CPU
+
+show processes cpu
+
+
+R2(config)# alias ?
+R2(config)# alias exec process show processes cpu | exclude 0.00%  0.00%  0.00%
+
+R2# show interfaces | include is up
+R2# show interfaces | include is up|rate
+
+R2# show interfaces | include line protocol|errors  (no space here, it's regex)
+
+R2# show interface | include is up|( rate )
+
+R2# show tech-support | redirect tftp://10.1.1.1/tech.txt
+
+R2# ping 10.21.1.1 source 192.168.0.1
+
+-- use ping to check load
+R2# ping 10.21.1.1 size 1500
+R2# ping 10.21.1.1 size 1500 repeat 1000
+
+-- use ping to check MTU, df-bit: don't fragment bit
+R2# ping 10.21.1.1 size 1500 df-bit
+
+++++++++++++++++++++++++++++++++++++++++++++++
+SPAN and RSAPN
+
+sw1(config)#monitor session 1 source ?
+interface       SPAN source interface
+remote          SPAN source Remote
+vlan            SPAN source VLAN
+
+sw1(config)# monitor session 1 source interface fastEthernet 0/12 ?
+,           Specify another range of interfaces
+-           Specify a range of interfaces
+both        Monitor received and transmitted traffic
+rx          Monitor received traffic only
+tx          Monitor transmitted traffic only
+<cr>
+
+sw1(config)# monitor session 1 source interface fastEthernet 0/12   # default to both
+sw1(config)# omnitor session 1 destination interface fastEthernet 0/1
+
+
+RSPAN: allow you to create an designated vlan
+
+sw1(config)# vlan 999
+sw1(config-vlan)# remote-span
+sw1(config-vlan)# exit
+sw1(config)# monitor session 1 source interface fastEthernet 0/10 
+sw1(config)# monitor session 1 destination ?
+interface       SPAN destination interface
+remote          SPAN destination Remote
+
+sw1(config)# monitor session 1 destination remote vlan 999 ?
+reflector-port               Remote SPAN reflector port
+
+sw1(config)# monitor session 1 destination remote vlan 999 reflector-port fastEthernet 0/20
+
+sw2(config)# vlan 999
+sw2(config)# remote-span
+sw2(config)# exit
+sw2(config)# monitor session 2 source remote vlan 999
+sw2(config)# monitor session 2 destination interface fastEthernet 0/5
+
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+

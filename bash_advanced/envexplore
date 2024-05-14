@@ -1,0 +1,14 @@
+# use export to make variable to be an environmental variable
+export VARIABLE='variable'
+
+# it's temporary. it'll disappear after terminal ended. 
+# To make it permanent, add it in the .bashrc or profile. and do not forget to add some notes
+
+# /etc/environment - variables that are stored here can be accesses system-wide
+# /etc/profile - The variables that are stored here can be accessed by every user and will be loaded when a new shell created.
+# ~/.bashrc - variables here can only be used by the respective user.
+
+# Removing Environment Variables
+unset VARIABLE
+
+

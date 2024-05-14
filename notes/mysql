@@ -1,0 +1,184 @@
+# master - slave or master - master key command
+change master to master_host="x.x.x.x", master_user='user1', master_password="xxx", master_log_file="mysql-bin.000001", master_log_pos=xxxx;
+
+#slave
+start slave;
+stop slave;
+reset slave;
+# RESET SLAVE: makes the replica forget its replication position in the source's binary log. This statement is meant to be used for a clean start; 
+# it clears the replication metadata repositories, deletes all the relay log files, and starts a new replay log file. 
+# it also resets to 0 the replication delay specified with the "MASTER_DELAY" option to "CHANGE MASTER TO".
+#
+show slave status\G;
+
+
+# master
+show master status\G
+reset master
+# RESET MASTER: delete all existing binary log files and resets the binary log index file, resetting the server to its state before binary logging was
+# started. A new binary log file is created so that binary logging can be restarted.
+
+
+# replica
+show replica status
+
+
+# logs
+show master logs  
+show binary logs # list the binary log files on the server. 
+# show master logs is equivalent to show binary logs
+# 
+
+# purge logs
+# The "purge binary logs" statement deletes all the binary log files listed in the log index file prior to the specified log file name or date. 
+# "BINARY" and "Master" are synonyms. Deleted log files also are removed from the list recorded in the index file, so that the given file becomes the first in the list. 
+# e.g.
+#
+# purge binary logs to 'mysql-bin.010'   
+# purge binary logs before '2019-04-02 22:46:26';
+
+# PURGE BINARY LOGS: is safe to run while replicas are replicating. You need not stop them. If you have an active replica that currently is reading one of the log files you are trying to delete,
+# this statement does not delete the log file that is in use or any log files later than that one, but delete any earlier log files. 
+# A warning message is issued in this situation, however, if a replica is not connected and you happen to purge one of the log files it has yet to read, the replica cannot replicate after it reconnects.
+#
+# Note: "PURGE BINARY LOGS" should not be issued while a "LOCK INSTANCE FOR BACKUP" statement is in effect for the instance, because it contravenes the rules of the backup lock by removing files from
+# the server.
+
+
+replicator/password
+
+1. create user replicator
+# grant the replication capability to repilcator from anywhere
+2. grant replication slave on *.* to 'replicator'@'%';
+
+3. check the user created
+select user, authentication_string, host from user where user='replicator'
+
+4. if want to change the user password
+update user set authentication_string=PASSWORD(new_password) where user='replicator' and host='%';
+flush privileges;
+
+5. change master to point to the master
+change MASTER TO MASTER_HOST = '192.168.1.77', MASTER_USER='replicator', MASTER_PASSWORD='password', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=157;
+
+
+6. when set up master-master database replication:
+let's say DC1, and DC2
+1. DC1 is the master, also a slave(points to DC2 as a master). "show slave status\G" will show the slave status. 
+   DC1 use "show master status\G" will display the master status. 
+2. DC2 is same as the DC1. also got two status. 
+
+# Note: (***Important***)  -- If in the production, remember always backup the logs. 
+# if you run "reset master" before the purge logs, the old logs won't disappear. 
+# you have to turn off the binlog at /etc/mysql/mysqld.conf.d/mysqld.cnf, then restart the mysqlservice
+# then run "purge master log before 'date'" again, 
+# then turn on the binlog, then restart the mysql service. 
+# you'll find the log gone. 
+
+# db backup - mysqldump
+flush tables with read lock;
+time mysqldump -uroot -p --database db1 db2 --single-transaction > db_mysql_bin.xx_`date +%Y%m%d`.sql
+unlock tables;
+
+# export table
+time mysqldump -uroot -p db_name [table_name ...]
+
+
+# database restore
+time mysql -u root -p --database=db_name < ./example.sql
+
+
+# mysqlbinlog - utility for processing binary log files
+# The server's binary log consists of files containing "events" that describe modifications to database contents.
+# The server writes these files in binary format. 
+# To display their contents in text format, use the "mysqlbinlog" utility.
+# You can also use "mysqlbinlog" to display the contents of "relay log" files written by a replica server in a replication setup because relay logs have the same format
+# binary logs. 
+# e.g. 
+# mysqlbinlog binlog.000003
+#
+
+
+# Server Log Maintenance
+# when using MySQL with logging enabled, you may want to back up and remove old log files from time to time and tell MySQL to start logging to new files. 
+#
+#
+# On Linux(Red Hat) installation, you can use the "mysql-log-rotate" script for log maintenance. If you installed MySQL from an RPM distribution, this script should have
+# been installed automatically.
+# Be careful with this script if you are using the binary log for replication. You should not remove binary logs until you are certain that their contents have been processed
+# by all replicas
+# On other systems, you must install a short script yourself that you start from cron (or its equivalent) for handling log files. 
+#
+# # Binary log files are automatically removed after the server's binary log expiration period.
+# # Removal of the files can take place at "startup and when the binary log is flushed".
+# Note: The default binary log expiration period is 30 days. 
+# To specify an alternative expiration period, use the "binlog_expire_logs_seconds" system variable.
+#
+# To force MySQL to start using new log files, flush the logs. Log flushing occurs when you execute a "FLUSH LOGS" statement or "mysqladmin flush-logs, mysqladmin refresh"
+# ", mysqldump --flush-dogs, or mysqldump --master-data" command. 
+#
+#
+# "FLUSH LOGS" supports optional modifier to enable selective flushing of individual logs (for example, FLUSH BINARY LOGS).
+# A log-flushing operation has the following effects:
+# 1. If binary logging is enabled, the server closes the current binary log file and opens a new log file with the next sequence number.
+# 2. If general query logging or slow query logging to a log file is enabled, the server closes and reopens the log file
+# 3. If the server was started with the "--log-error" option to cause the error log to be written to a file, the server closes and reopens the log file.
+#
+# Making Delimited-Text File Backups
+# To create a text file containing a table's data, you can use "SELECT * INTO OUTFILE 'filename' FROM tbl_name". The file is created on the MySQL server host, not the
+# client host. For this statement, the output file cannot already exist because  permitting files to be overwritten constitutes a security risk.
+# This method works for any kind of data file, but saves only table data, not the table structure.
+#
+# Another way to create text data files (along with files containing "CREATE TABLE" statements for the backed up tables) is to use "mysqldump" with the "--tab" option.
+#
+# To reload a delimited-text file, use "LOAD DATA" or mysqlimport.
+#
+# If you invoke "mysqldump" with the "--tab=dir_name" option, it uses "dir_name" as the output directory and dumps tables individually in that directory using two files
+# for each table. The table name is the base name for these files. For a table named t1, the files are named "t1.sql" and "t1.txt".
+#
+# The .sql file contains a "CREATE TABLE" statement for the table. The .txt file contains the table data, one line per table row.
+#
+# The following command dumps the contents of the db1 database to files in the /tmp database:
+#  $> mysqldump --tab=/tmp db1
+#
+# The .txt files containing table data are written by the server, so they are owned by the system account used for running the server. 
+# The server uses 'SELECT ... INTO OUTFILE' to write the files, so you must have the "FILE" privilege to perform this operation, and an error occurs if a given .txt file
+# already exists.
+#
+#
+#
+# DROP DATABASE [IF EXISTS] database_name;
+# In MySQL, the schema is the synonym for the database. Therefore, you can use them interchangeably:
+# DROP SCHEMA [IF EXISTS] database_name
+#
+
+# Show Privileges for a user in Mysql?
+Select user, host FROM mysql.user;
+
+# check the privileges for the next step.
+show GRANTS FOR <username>@<host>;
+e.g. show grants for replicator@'%';
+
+
+# Alternatively, check the permissions for the currently logged in user with:
+show GRANTS;
+
+# Grant Privileges on Tables;
+# syntax: GRANT privileges ON database.* to 'username'@'%' (% or localhost)
+# e.g.
+# USE database1
+# GRANT SELECT, INSERT, UPDATE, DELETE ON contracts to 'smith'@'localhost'
+# GRANT ALL ON contracts TO 'smith'@'localhost'
+#
+# REVOKE:
+# REVOKE DELETE, UPDATE ON contracts FROM 'smith'@'localhost'
+# REVOKE ALL on contracts FROM 'smith'@'localhost';
+# REVOKE SELECT on contracts FROM '*'@'localhost'; # revoke select from all users at localhost.
+#
+# GRANT/REVOKE Privileges on Functions/Procedures
+# syntax: Grant/revokce EXECUE on [procedure | function] object to user;
+# e.g.
+# grant execute on procedure MyFirstProc To 'smith'@'localhost';
+# revoke execute on procedure MyFirstProc From 'smith'@'localhost';
+#
+ 

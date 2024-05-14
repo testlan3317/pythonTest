@@ -1,0 +1,53 @@
+Groovy - case-sensitive language
+
+Semicolons:
+1. unlike Java, Groovy is not mandatory to have semicolons at the end of every statement.
+
+Identifiers:
+are used to define variables, functions or other user defined variables. Identifiers start with a letter, a dollar or an underscore
+use "def" keyword to define an identifer
+
+def student_name
+
+Build-in Data Types: byte, short, int, long, float, double, char, Boolean, String
+
+Classic Numeric:
+java.lang.Byte
+java.lang.Short
+java.lang.Integer
+java.lang.Long
+java.lang.Float
+java.lang.Double
+In addition, the following classes can be used for supporting arbitrary precision arithmetic
+java.math.BigInteger  - 30g
+java.math.BigDecimal  - 3.5g
+
+Variables:
+1. define with native syntax
+2. use "def"
+e.g. def _Name = "Joe"
+
+
+Method:
+1. method in Groovy is defined with a return type or with the "def" keyword.
+2. method can retrieve any number of arguments. 
+3. It's not necessary that the types are defined when defining the argument. 
+4. Modifiers such as public, private, and protected can be added. 
+5. By default, if no visibility modifier is provided, the method is public.
+
+def methodName(){
+    //Method code
+}
+
+Exception:
+1. Checked Exception: The classes that extend Throwable class except RuntimeException and Error are known as checked exceptions
+   e.g. IOException, SQLException etc. Checked exceptions are checked at compile-time
+
+   File file = new File("E://file.txt")
+   FileReader fr = new FileReader(file)
+if the File(file.txt) is not there in the E drive, the following exception will be raised
+java.io.FileNotFoundException: E:\file.txt (The system cannot find the file specified).
+
+2. Unchecked Exception: The classes that extend RuntimeException are known as unchecked exceptions.
+   e.g. ArithmeticException, NullPointerException, ArrayIndexOutOfBoundsException etc. 
+   Unchecked exceptions are not checked at compile-time rather they are checked at runtime.

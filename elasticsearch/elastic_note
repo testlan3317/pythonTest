@@ -1,0 +1,74 @@
+Logstash install
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elastic-keyring.gpg
+
+You may need to install the apt-transport-https package on Debian before proceeding:
+
+sudo apt install apt-transport-https
+
+save the repository definition to /etc/apt/sources.list.d/elastic-8.x.list:
+echo "deb [signed-by=/usr/share/keyrings/elastic-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-8.x.list
+
+Stashing first event:
+cd /usr/share/logstash
+bin/logstash -e 'input { stdin{ } } output { stdout{} }'
+-e: enables you to specify a configuration directly from the command line. 
+
+
+Install FileBeat (it is used to send log lines to logstash, used to collect logs from files on the server and forwards logs to logstash instance)
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.8.0-amd64.deb
+sudo dpkg -i filebeat-8.8.0-amd64.deb
+
+
+1. Filebeat will attempt to connect on port 5044
+2. Until Logstash starts with an active Beats plugin, there won't be any answer on that port, so any messages you see regarding failure to connect on that port are normal for now.
+
+grok:
+The grok filter plugin enables you to parse the unstructured log data into something structured and queryable. 
+Because the grok filter plugin looks for patterns in the incoming log data, configuring the plugin requires you to make decisions about how to identify the patterns that are of interest 
+to your use case.
+
+You need to force Filebeat to read the log file from scratch. To do this, go to the terminal window where Filebeat is running and press ctrl+c, then go to /usr/share/filebeat/bin/data/, delete
+the registry file 
+sudo rm data/registry
+
+Elasticsearch install
+wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+
+sudo apt install apt-transport-https
+
+echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/package/8.x/apt stable main" | sudo tee /etc/apt/sources.list/elastic-8.x.list
+
+sudo apt update && sudo apt install elasticsearch
+
+After you install elasticsearch
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch.service
+sudo systemctl start elasticsearch.service
+
+if you have password-protected your elasticsearch keystore, you will need to provide systemd with the keystore password using a local file and systemd environment variables.
+This local file should be protected while it exists and may be safely deleted once Elasticsearch is up and running. 
+
+e.g.
+echo "keystore_password" > /path/to/my_pwd_file.tmp
+chmod 600 /path/to/my_pwd_file.tmp
+sudo systemctl set-environment ES_KEYSTORE_PASSPHRASE_FILE=/path/to/my_pwd_file.tmp
+sudo systemctl start elasticsearchi.service
+
+Note:
+By default, the Elasticsearch service doesn't log information in the systemd journal. To enable journalctl logging, the "--quiet" option must be removed from the ExecStart command line in 
+the elasticsearch.service file. 
+
+
+
+/etc/systemd/ vs /usr/lib/systemd/
+Basically, files that ships in packages downloaded from distribution repo go into /usr/lib/systemd/system.
+Modifications done by system administrator go into /etc/systemd/system
+
+
+
+rm /usr/share/filebeat/bin/data
+sudo ./filebeat -e -c filebeat.yml -d "publish"
+
+bin/logstash -f first-pipeline.conf --config.test_and_exit
+bin/logstash -f first-pipeline.conf --config.reload.automatic
+

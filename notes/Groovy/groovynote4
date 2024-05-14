@@ -1,0 +1,26 @@
+closure
+closure is a short annoymous block of code.
+closure can also contain formal parameters to make them more useful just like methods in Groovy.
+
+class Example{
+    static void main(String[] args){
+        def clos = {param->println "hello ${param}"};
+        clos.call("World");
+    }
+}
+notice the use of the ${param} which causes the closure to take a parameter. When calling the closure via the clos.call
+statement we now have the option to pass a parameter to the closure
+
+The next illustration repeats the previous example and produces the same result, but shows that an implicit signle parameter referred to as it can be used. 
+Here "it" is a keyword in Groovy
+
+class Example{
+    static void main(String[] args){
+        def clos = {println "Hello ${it}};
+        clos.call("world");
+    }
+}
+
+Using Closures with Maps
+
+

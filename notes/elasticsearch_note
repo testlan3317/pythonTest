@@ -1,0 +1,949 @@
+Elastic  - restAPI supported
+
+The Elastic stack:
+Reliaably and securely take data from any source, in any format, then search, analyze, and visulize it in real time. 
+
+Use case:
+- logging
+- Metrics
+- Security Analytics
+- Business Analytics
+
+Stack structure:
+-------------------
+|  Kibana         |
+------------------
+| elsasticksearch |
+------------------
+| beats | logstash|
+-------------------
+
+kibana:
+visualize & Manage
+
+
+Elasticsearch
+store|search|analyze
+
+Node: an instance of Elasticsearch. each node has unique id and name, and it belongs to a single cluster. 
+
+
+Data is stored as documents. a json object that is stored in Elasticsearch under a unique ID.
+{
+name: "Clementines(3lb bag)",
+category: "Fruites",
+brand: "Cuties",
+price: "$4.29"
+}
+
+sharding:
+-----------------------------------
+|cluster                          |
+-----------------------------------
+|  Node-1       |      Node-2     |
+|---------------|-----------------|
+| Produce Index |                 |
+|     P0        |      p1         |
+|---------------------------------
+P0 is shard, shard holds documents releated to produce. 
+
+
+
+Document grouped into an index. 
+--------------------------
+| Produce Index          |
+|------------------------|
+| {                      |
+| name: "Baby Carrots",  |
+| catetory: "vegetables",|
+| brand: "365",          |
+| price: "$0.99"         |
+| }                      |
+--------------------------
+
+
+ what are replica shards?
+ 
+
+------------------------------------------------------------------
+|  Node-1       |      Node-2     |      Node-3  |       Node-4  |
+|---------------|-----------------|-------------------------------
+| Produce Index |                 |                              |
+|     P0        |      P1         |       R0     |         R1    |
+|-----------------------------------------------------------------
+R0 is the replica of shard P0
+R1 is the replica of shard P1  (P: Primary, R: Replica)
+if one node down, that'ok, because we have the replia. it could also improve the search performance. 
+
+
+
+run this at kabana console:
+Getting information about cluster and nodes:
+syntax: GET _API/parameter
+
+Get info about cluster health
+GET _cluster/health
+
+Get info about nodes in a cluster
+GET _nodes/stats
+
+
+lots features could be configured here. 
+elasticsearch.yml
+
+create an index
+
+Syntax: PUT Name-of-the-Index
+
+Example: PUT favorite_candy
+
+
+index a document:
+when indexing a document, both HTTP verbs POST or PUT can be used. 
+1. Use POST when you want Elasticsearch to autogenerate an id for your document. 
+syntax:
+POST Name-of-the-Index/_doc
+{
+    "field": "value"
+}
+Example:
+POST favorite_candy/_doc
+{
+    "first_name": "Lisa",
+    "candy": "Sour Skittles"
+}
+
+If you use put, 
+syntax:
+PUT Name-of-the-Index/_doc/id-you-want-to-assign-to-this-document
+{
+    "field":"value"
+}
+
+PUT favorite_candy/_doc/1
+{
+    "first_name":"John",
+    "candy": "Starburst"
+}
+
+READ
+syntax
+GET Name-of-the-Index/_doc/id-of-the-document-you-want-to-retrieve
+Example:
+GET favorite_candy/_doc/1
+
+--------------------------------------------------------------------------
+_create Endpoint:
+when you index a document using an id that already exists, the existing document is overwritten by the new document. If you donot want a existing document to be overwritten, you can use the _create endpoint. 
+
+with the _create Endpoint, no indexing will occur and you will get a 409 error message. 
+
+syntax:
+PUT Name-of-the-Index/_create/id-you-want-to-assign-to
+{
+    "field":"value"
+}
+
+Example:
+PUT favorite_candy/_create/1
+{
+    "first_name":"Finn",
+    "candy":"Jolly Ranchers"
+}
+
+
+-----------------------------------------------------------------------------
+Update a document:
+If you want to update fields in a document, use below:
+syntax:
+POST Name-of-the-Index/_update/id-of-the-document-you-assign
+{
+    "doc": {
+        "field1":"value1",
+        "field2":"value2"
+    }
+}
+
+Example:
+POST favorite_candy/_update/1
+{
+    "doc":{
+        "candy":"M&M's"
+    }
+}
+--------------------------------------------------------------------------------
+Delete 
+Delete Name-of-the-Index/_doc/id-of-the-document-you-assgin
+
+Example:
+Delete favorite_candy/_doc/1
+
+
+
+======================================
+Relevance of a search
+
+
+Get the exact total number of hits:
+To improve the response speed on large datasets, Elasticsearch limits the total count to 10,000 by default.
+If you want the exact total number of hits, use the following query.
+Syntax:
+GET enter_name_of_the_index_here/_search
+{
+    "track_total_hits":true
+}
+
+Example:
+GET news_headlines/_search
+{
+    "track_total_hits":true
+}
+
+GET news_headlines/_search
+{
+  
+}
+
+
+Aggretations
+An aggregation summarizes your data as metrics, statistics, and other analytics.
+Analyze the data to show the categories of news headlines in our dataset
+
+syntax:
+
+GET enter_name_of_the_index_here/_search
+{
+    "aggs":{
+	"name your aggregation here": {
+	    "specify aggregation type here":{
+		"field":"name the field you want to aggregate",
+		"size": state how many buckets you want to retrieve
+	    }
+	}
+    }
+}
+
+e.g.
+GET news_headlines/_search
+{
+    "aggs":{
+	"by_category":{
+	    "terms": {
+		"field":"category",
+		"size": 100
+	    }
+	}
+    }
+}
+
+GET news_headlines/_search
+{
+    "query": {
+	"match":{"category": "ENTERTAINMENT"}
+    },
+    "aggregation":{
+	"popular_in_entertainment":{
+	    "significant_text":{"field":"headline"}
+        }
+    }
+}
+
+match by default use the or logic.  cause lots of recall. 
+if increse the precision, we should add the operator "and"
+GET news_headlines/_search
+{
+    "query": {
+        "match":{
+            "headline":{
+		"query":"Khloe kardashahian Kendall Jenner",
+                "operator": "and"
+	    }
+        }
+    }
+}
+
+
+Bool query
+GET name_of_your_index/_search
+{
+    "query":{
+	"bool": {
+	    "must": [
+                {}
+            ],
+            "must_not": [
+		{}
+	    ],
+	    "should": [
+		{}
+	    ],
+	    "filter": [
+		{}
+	    ]
+	}
+    }
+}
+
+Delete the index that manages the dataset you want to delete
+
+DELETE news_headlines
+
+
+
+
+-----------------------------------------------------------
+Elasticsearch:
+- Started off as scalable Lucene
+- Horizontally scalable search engine
+- Each "shard" is an inverted index of documents
+- But not just for full text search
+- can handle structured data, and can aggregate data quickly
+- Often a faster solution than Hadoop/Spark/Flink/etc.
+
+
+Kibana:
+- web UI for searching and visualizing
+- Complex aggregations, graphs, charts
+- Often used for log analysis
+
+Logstash / Beats:
+- ways to feed data into Elasticsearch
+- FileBeat can monitor log files, parse them, and import into Elasticsearch in near-real-time
+- Logstash also pushes data into Elasticsearch from many machines
+- Not Just log files
+
+X-pack:
+- security
+- Alerting
+- Monitoring
+- Reporting
+- Machine Learning
+- Graph Exploration
+
+Basic:
+documents - Documents are the things that you're searching for. They can be more than text - any structured JSON data works. like row in db, every document has a unique ID, and type.
+
+types - A type defines the schema and mapping shared by documents that represent the same sort of thing. ( a log entry, an encyclopedia article, etc.) - like an table
+
+indices - An index powers search into all documents within a collection of types. They contain inverted indices that let you search across everything within them at once.- like an database
+
+-----
+concepts:
+TF-IDF: means Term Frequency * Inverse Document Frequency
+
+Term Frequency: is how often a term appears in a given document. 
+
+Document Frequency: is how often a term appears in all documents. 
+
+Term Frequency / Document Frequency: measures the relevance of a term in a document. 
+
+--------------
+Using indices:
+1. RESTful API
+2. Client API's ( most languages have specialized Elasticsearch libraries to make it even easier such as python)
+3. analytic tools (web-based graphical UI's such as Kibana let you interact with your indices and explore them without writing code)
+
+-------------
+an index is split into shards
+Documents are hashed to a particular shard.
+Each shard may be on a different node in a cluster
+Every shard is self-contained Lucene index of its own.
+
+The number of primary shards cannot be changed later. 
+PUT /testindex
+{
+    "settings": {
+        "number_of_shards": 3,
+        "number_of_replicas": 1
+    }
+}
+which means total 6 shards, eash primary shard get 1 replica shards
+
+----------------------------------
+Searching for search terms
+The "match query" is a standard query for performing a full text search. This query retrieves documents that contain the search terms in any way, shape or form. The order and the proximity in which the search terms are found(i.e. phrases) are not considered as a priority.
+
+syntax:
+GET Enter_name_of_index_here/_search
+{
+    "query": {
+	"match": {
+            "specify the field you want to search":{
+		"query":"Enter search terms"
+	    }
+	}
+    }
+}
+
+
+Running Full text queries:
+
+
+match_phrase query
+
+GET Enter_the_name_of_the_index_here/_search
+{
+    "query": {
+	"match_phrase": {
+	    "Specify the field you want to search over": "Enter the phrase you are searching for"
+	}
+    }
+}
+
+when the "match_phrase" parameter is used, all hits must meet the following criteria:
+1. the search terms must appear in the headline field. 
+2. the terms must appear in that order.
+3. the terms must appear next to each other. 
+
+
+Running a match query against multiple fields:
+you can write a query designed search for terms in multiple fields. 
+syntax:
+GET Enter_name_of_index/_search
+{
+    "query": {
+	"multi_match":{
+	    "query": "Enter search terms here",
+	    "fields": [
+		"List the field you want to search over",
+		"List the field you want to search over",
+		"List the field you want to search over"
+	    ]
+	}
+    }
+}
+
+e.g.
+GET news_headlines/_search
+{
+    "query": {
+	"multi_match":{
+	    "query":"Michelle Obama",
+	    "fields": [
+		"headline",
+		"short_description",
+		"authors"
+	    ]
+	}
+    }
+}
+
+
+Per-field boosting:
+To improve the precicion of your search, you can designate one field to carry more weight more than others. 
+This can be done by boosting the score of the field headline using the carat(^) symbol.
+
+syntax:
+GET Enter_name_of_index/_search
+{
+    "query": {
+	"multi_match": {
+	    "query": "Enter search terms",
+	    "fields": [
+		"List field you want to boost^2",     # boot the score in this field
+		"List field you want to search over",
+		"List field you want to search over"
+	    ]
+	}
+    }
+}
+
+
+Run match phrase against each field:
+GET news_headlines/_search
+{
+    "query": {
+	"multi_match": {
+	    "query": "party planning",
+	    "fields": [
+		"headline^2",
+		"short_description"
+	    ],
+            "type": "phrase"   # - here is the key
+        }
+    }
+}
+
+------------
+combined queries
+syntax:
+GET name_of_index/_search
+{
+    "query": {
+	"bool": {
+	    "must": [
+		{One or more queries can be specified here.}
+	    ],
+	    "must_not": [
+		{A document must not match any of the queries}
+	    ],
+	    "should": [
+		{A document does not have to match any query}
+ 	    ],
+	    "filter": [
+		{These filters(queries) place docuemnts in either}
+	    ]
+	}
+     }
+}
+
+e.g.
+GET news_headlines/_search
+{
+    "query": {
+	"bool": {
+	    "must": [
+		{
+		    "match_phrase": {
+		        "headline": "Michelle Obama"
+		    }
+		},
+		{
+		    "match": {
+			"category": "POLITICS"
+		    }
+		}
+	    ],
+            "should": [
+		{
+		    "match_phrase": {
+			"category": "BLACK VOICES"
+		    }
+		}
+            ]
+	}
+    }
+}
+
+-----------------------
+The filter clause:
+The "filter clause" contains filter queiries that place documents in either "yes" or "no" category.
+
+For example, let's say you are looking for an article written in certain time range. Some documents will fall within this range(yes) or do not fall within this range (no)
+
+The "filter clause" only includes documents that fall in the yes category. 
+
+Syntax:
+GET Enter_name_of_index/_search
+{
+    "query": {
+	"bool": {
+	    "must": [
+		{
+		"Enter match or match_phrase here": {
+			"Enter the name of the field": "Enter the value"
+		    }
+		}
+	    ],
+	    "filter":{
+		"range":{
+		    "date": {
+		        "gte": "Enter lowest value of the range",
+			"lte": "Enter highest value of the range"
+		    }
+		}
+	    }
+	}
+    }
+}
+
+
+------------
+Run aggregations with  Elasticsearch and kibana
+
+Metric Aggregation:
+Metric aggregations are used to compute numeric values based on your dataset. It can be used to calculate values of sum, min, max, avg, unique count( cardinality) and etc.
+
+syntax:
+GET Enter_name_of_index/_search
+{
+    "aggs": {
+	"Name your aggregations here": {
+	    "sum": {
+		"field": "Name the field you want to aggregate on"
+	    }
+	}
+    }
+}
+
+e.g.
+GET ecommerce_data/_search
+{
+    "aggs": {
+	"sum_unit_price": {
+	    "sum": {
+		"field": "UnitPrice"
+	    }
+	}
+    }
+}
+
+
+stats aggregation:
+GET ecommerce_date/_search
+{
+    "size": 0,
+    "aggs": {
+	"all_stats_unit_price":{
+	    "stats": {
+		"field": "UnitPrice"
+	    }
+	}
+    }
+}
+
+
+Cardinality Aggregation:
+The "cardinality" aggregation computes the count of unique values for a given field. 
+
+GET Enter_name_of_index/_search
+{
+    "size": 0,
+    "aggs": {
+	"Name your aggregations here": {
+	    "cardinality": {
+		"field": "Name the field you want to aggregate on "
+	    }
+	}
+    }
+}
+
+Bucket Aggregation:
+when you want to aggregate on several subsets of documents, bucket aggregations will come in handy. "Bucket aggregation" group documents into several sets of documents called buckets. All documents in a bucket share a common criteria. 
+
+The following are different types of "bucket aggregations":
+1. Date Histogram Aggregation
+2. Histogram Aggregation
+3. Range Aggregation
+4. Terms aggregation
+
+
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"transaction_by_8_hrs": {
+	    "date_histogram": {
+		"field": "InvoiceDate:,
+		"fixed_interval": "8h"
+	    }
+	}
+    }
+}
+
+Bucket sorting for date histogram aggregation
+By default, date histogram aggregation sorts buckets based on the _key values in ascending order. To reverse this order, you can add an order parameter to the aggregation. Then specify that you want to sort buckets based on the _key values in descending(desc) order
+
+Example:
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"transaction_by_month": {
+	    "date_histogram": {
+		"field": "InvoiceDate",
+		"calendar_interval": "1M",
+		"order": {                    # --order
+		    "_key": "desc"            # _key value
+		}
+	    }
+	}
+    }
+}
+
+
+Range Aggregation:
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"transactions_per_custom_price_ranges": {
+	    "range": {
+		"field": "UnitPrice",
+		"range": [
+   		    {
+			"to": 50    # 0 - 50
+		    },
+		    {
+			"from": 50,
+			"to": 200   # 50-200
+		    },
+		    {
+			"from": 200  # 200 - up
+		    }
+		]
+	    }
+	}
+    }
+}
+
+Terms Aggregation:
+The "Terms aggregation" creates a new bucket for every unique term it encounters for the specified field. It is often used to find the most frequently found terms in a document. 
+
+syntax:
+GET Enter_name_of_index/_search
+{
+    "aggs": {
+	"Name your aggregation here": {
+	    "terms": {
+		"field": "Name the field you want to aggregate on",
+		"size": "State how many top results you want returned"
+	    }
+	}
+    }
+}
+
+e.g.
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"top_5_customers": {
+	    "terms": {
+		"field": "CustomerID",
+		"size": 5
+	    }
+	}
+    }
+}
+
+-------------------
+Mapping:
+Mapping determines how a document and its fields are indexed and stored by defining the type of each field. 
+
+{
+    "temp_index": {
+	"mappings": {
+            "properties": {
+		"quantity": {   #<- field name
+		    "type": "long:
+		},
+		"unit_price": {
+		    "type": "float"   #<- field type
+		}
+	    }
+	}
+    }
+}
+
+
+It contains a list of the names and types of fields in an index. Depending on its type, each field is indexed and stored differently in Elasticsearch.
+
+GET produce_v2/_mapping
+
+PUT produce_v2/_mapping
+{
+    "runtime": {
+	"total": {
+	    "type": "double",
+	    "script": {
+		"source": "emit(doc['unit_price'].value * doc['quantity'].value)"
+	    }
+	}
+    }
+}
+
+-------------------------------------
+Troubleshooting Level Elasticsearch Errors:
+1. when indexing a document, HTTP verb PUT or POST can be used. 
+The HTTP verb PUT is used when you want to assign a specific id to your document.
+
+syntax:
+PUT name-of-the-Index/_doc/id-you-want-to-assign-to-this-document
+{
+    field_name: "value"
+}
+
+PUT common_errors/_doc/1
+{
+    "source_of_error":"error1"
+}
+
+
+The HTTP verb PUT is used when you want Elasticsearch to autogenerate an id for the document
+Syntax:
+POST Name-of-the-Index/_doc
+{
+    field_name: "value"
+}
+
+POST common_errors/_doc
+{
+    "source_of_error":"error1"
+}
+
+Bool QUery:
+with the bool query, you can combine multiple queries into one request and you can further specify boolean clauses to narrow down your search results. 
+
+GET news_headlines/_search
+{
+    "query": {
+	"filter": [
+	    {
+		"match": {
+		    "category": "ENTERTAINMENT"
+	        }
+	    },
+	    {
+		"match": {
+		    "date": "2018-04-12"
+		}
+	    }
+	]
+    }
+}
+
+
+Aggregation:
+GET news_headlines/_search
+{
+    "size": 0,
+    "aggs": {
+	"by_category": {
+	    "terms": {
+	        "field": "category"
+	    }
+        }
+    }
+}
+
+
+mapping:
+let's check the mapping of the ecommerce_original_data index:
+GET ecommerce_original_data/_mapping
+
+Remember: you cannot change the mapping of the existing field. 
+The only way you can accomplish this is to:
+1. create a new index with the desired mapping
+2. reindex data from the original index to the new one
+3. send the date_histogram aggregations request to the new index. 
+
+Remember: you cannot change the mapping of the existing field. 
+The only way you can accomplish this is to:
+1. create a new index with the desired mapping
+2. reindex data from the original index to the new one
+3. send the date_histogram aggregations request to the new index. 
+
+1. create a new index with the desired mapping
+PUT ecommerce_data
+{
+    "mapping": {
+	"properties": {
+	    "Country": {
+		"type": "keyword"
+	    },
+	    "CustomerID": {
+		"type": "long"
+	    },
+	    "Description": {
+		"type": "text"
+	    },
+	    "InvoiceDate": {
+		"type": "date",
+                "format": "M/d/yyyy H:m"
+	    },
+	    "InvoiceNo": {
+		"type": "keyword"
+	    },
+	    "Quantity": {
+		"type": "long"
+	    },
+	    "StockCode": {
+		"type": "keyword"
+	    },
+	    "UnitPrice": {
+		"type": "double"
+	    }
+	}
+    }
+}
+
+Step 2: reindex the data from original index (source) to the one you just created (destination)
+POST _reindex
+{
+    "source": {
+	"index": "ecommerce_original_data"
+    },
+    "dest": {
+	"index": "ecommerce_data"
+    }
+}
+
+Step 3: send the date_histogram aggregations request to the new index(ecommerce_data)
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"transactions_by_8_hrs": {
+	    "date_histogram": {
+		"field": "InvoiceDate",
+		"fixed_interval": "8h"
+	    }
+        }
+    }
+}
+
+
+aggregations - sub-aggregation
+
+GET ecommerce_data/_search
+{
+    "size": 0,
+    "aggs": {
+	"transactions_per_day": {
+	    "date_histogram": {
+		"field": "InvoiceDate",
+		"calendar_interval": "day"
+	    },
+	    "aggs": {
+		"daily_revenue": {
+		    "sum": {
+			"script": {
+			    "source": "doc['UnitPrice'].value * doc['Quantity'].value
+			}
+		    }
+		},
+		"number_of_unique_customers_per_day": {
+		    "cardinality": {
+			"field": "CustomerID"
+		    }
+		}
+	    }
+	}
+    }
+}
+
+-----------------------------------------------------------------
+concepts:
+1. Bucket aggregation: Aggregations that group documents into buckets, also called bins, based on field values, ranges, or other criteria in the document.
+   when the aggregation is performed, the documents are placed in the respective bucket(s). This way you can divide a set of invoices into several buckets, 
+   one for each customer, system logs can be divided into several buckets, one for each customer, system logs can be divided into "error", "warning" and 
+   "info", or CPU performance data divided into hourly buckets. 
+   The output consists of a list of buckets, each with a key and a count of documents. Here are some examples of bucket aggregations: "Histogram Aggregation",
+   "Range Aggregation", "Terms Aggregation", "Filter(s) Aggregations", "Geo Distance Aggregation" and "IP Range Aggregation".
+
+2. Metric aggregations: Aggregations that calculate metrics, such as a sum or average, from field values. 
+   Mainly refers to the mathematical calculations performed across a set of documents, usually based on the values of a numerical field present in the document,
+   such as COUNT, SUM, MIN, mAX, AVERAGE etc. Metrics may be carried out at top level, but are often more useful as a sub aggregation to calculate values for a
+   bucket aggregation. 
+
+3. Pipeline aggregations: Aggregations that take input from other aggregations instead of documents or fields. These aggregations allow you to aggregate based on 
+   the result of another aggregation rather than from document sets. Typically this aggregation is used to find the average number of documents in a bucket, or 
+   to sort buckets based upon a metric produced by a metric aggregation.
+
+
+Pipeline aggregation syntax:
+A pipeline aggregation uses the "buckets_path" property to access the results of other aggregations. The "buckets_path" property has a specific syntax:
+
+bucket_path = <AGG_NAME>[<AGG_SEPARATOR>,<AGG_NAME>]*[<METRIC_SEPARATOR>,<METRIC>];
+
+where:
+- AGG_NAME: is the name of the aggregation
+- AGG_SEPARATOR: separtes aggregations. It's represented as >.
+- METRIC_SEPARATOR: separates aggregations from its metrics. It's represented as ..
+- METRIC: is the name of the metric, in case of multi-value metric aggregations. 
+
+ 
+   
+
+

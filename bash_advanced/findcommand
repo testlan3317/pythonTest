@@ -1,0 +1,47 @@
+# find command:
+
+# print out the suspicousQuery.log.* logs which stays at system more than 60 days( mtime-modify time) and calculate the total size (human-readable)
+find . -name "suspiciousQuery.log.*" -mtime +60 -print|xargs du -ch
+
+find . -name "suspiciousQuery.log.*" -mtime +60 -ls|sort -k 8Mr | du -h
+
+find . -name "suspiciousQuery.log.*" -mtime +30 -mtime -60 -ls|sort -k 8Mr
+
+# sort on multiple column,(8,9 column) in this case
+find . -name "suspiciousQuery.log.*" -mtime +30 -mtime -60 -ls|sort -k 8,9 
+
+# deleted the files which stays in the system more than 60 days
+
+find . -name "suspciousQuery.log.*" -mtime +60 -print|xargs rm
+
+# find all bash and all txt files which modified 180 ago and size larger than 2k, then execute ls -lh
+# the very end \; is needed because it ends the exec sub-command. \ is escape. 
+find . \( -name "*.bash" -o -name "*.txt" \) -mtime +180 -size +2k -exec ls -lh {} \;
+
+
+# 
+# find all .tex files and sort by -k 7th filed with n(--numeric-sort), -M(--month-sort).
+# -k: means sort via a key. 
+find . -name "*.tex" -ls | sort -k 7n
+
+## Important: -print vs -print0
+# The find command prints results to standard output by default, so the "-print" is normally not needed, 
+# but "-print0" separates the filenames with a 0(NULL) byte so that names containing spaces or newlines
+# can be interpreted correctly.
+# 
+#
+
+# With -print0, find will separate the filenames with a null character (a zero byte). xargs must then be called with -0 (or --null, I recommend using long options in scripts, which increase readability, and reserve shortenings for disposable commands in an interactive console).
+
+find . -name "suspiciousQuery.log.*" -print0|xargs -0 du -ch
+find . -name "suspiciousQuery.log.*" -print0|xargs --null du -ch
+
+# find and remove multiple files.
+find . -type f -name "*.py" -exec rm -f {} \;
+
+# find all empty files
+find /home -type f -empty
+# find all empty directories
+find /home -type d -empty
+
+

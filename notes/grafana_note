@@ -1,0 +1,336 @@
+# if you forgot your password then you can reset it using the "grafana-cli" command. 
+grafana-cli --homepath "/usr/share/grafana" admin reset-admin-password admin
+
+
+1. After add repo according to the website
+2. yum install grafana
+
+3. package details:
+
+Install binary to /usr/sbin/grafana-server
+
+Copies init.d script to /etc/init.d/grafana-server
+
+Installs default file (environment vars) to /etc/sysconfig/grafana-server
+
+copies configuration file to /etc/grafana/grafana.ini
+
+installs systemd service (if systemd is available) name: grafana-server.service
+
+The default configuration uses a log file at /var/log/grafana.log
+
+The default configuration specifies an sqlite3 database at /var/lib/grafana/grafana.db
+
+
+--------------------------------
+only users with "organization administrator role' can add or remove data sources.
+
+Time series queries
+If you set Format as to "Time series", then the query must have a column named "time" that returns either a SQL datetime or any numeric datatype representing Unix
+epoch in seconds.
+
+In addition, result sets of "time series" queries must be sorted by time for panel to properly visualize the result.
+
+Note:
+A "time series query result" is returned in a "wide data frame" format
+
+Any column (except time or of type string) transforms into value field in the data frame query result.
+
+Any string column transforms into field labels in the data frame query result.
+
+
+MYSQL Macros:
+$__time(dataColumn): convert the column to a unix timestamp and rename the column as "time_sec"
+
+$__timeEpoch(dataColumn): convert the column to a unix timestamp and rename the column as "time_sec"
+
+$__timeFilter(dataColumn): replaced by a "time range filter" using the column name
+
+$__timeFrom(): replaced by the start of the currently active time selection. e.g. FROM_UNIXTIME(1494410783)
+
+$__timeTo(): replaced by the end of the currently active time selection.
+
+$__timeGroup(dataColumn, '5m'): replace by an expression usable in "GROUP BY" clause.
+
+$__timeGroup(dataColumn, '5m',0): same as above but with a fill parameter so missing points in that series will be added by grafana and 0 will be used as value.
+
+$__timeGroup(dataColumn, '5m', NULL): Same as above but NULL will be used as value for missing points.
+
+
+---------------------------------------------------------
+Global Variables:
+Grafana has global built-in variables that can be used in expressions in the query editor. 
+$__dashboard: The variable is the name of the current dashboard
+
+$_from and $_to:
+Grafana has two built-in time range variables: $__from and $__to. They are currently always interpolated as epoch milliseconds by default, but you can control date formatting.
+
+Syntax				Example result	  		Description
+${__from}                   1595671549254                 Unix millisecond epoch
+${__from:date}		    2020-07-13T20:19:09:254Z   	  No args, defaults to ISO 8601/RFC 3339
+${__from:date:iso}          2020-07-13T20:19:09:254Z      ISO 8601/RFC 3339
+${__from:date:seconds}      1594671549                    Unix seconds epoch
+${__from:date:YYYY-MM}      2020-07                       Any custom date format that does not include the : character
+
+
+The syntax above also works with ${__to}.
+You can also use this in URLs, as well. For example, you can send a user to a dashboard that shows a time range from six hours
+ago until now: https://play.grafana.org/d/000000012/grafana-play-home?viewPanel=2&orgId=1?from=now-6h&to=now
+
+
+$__interval:
+Grafana automatically calculates an interval that can be used to "group by time" in queries. When there are more data
+points that can be shown on a graph, then queries can be made more efficient by grouping by a larger interval.
+It's more efficient by grouping by 1 day than by 10 second when looking at 3 months of data 
+and the graph will look the same and the query will be faster.  
+
+The $__interval is calculated using the time range and the width of the graph (the number of pixels).
+Approximate calculation ( to - from) / resolution
+
+$__interval_ms:
+This variable is the $__interval variable in milliseconds, not a time interval formatted string. For example, if the $__interval is 20m then the $__interval_ms is 12000000.
+
+$__name:
+This variable is only available in the Singlestat panel and can be used in the prefix or suffix fields on the Options tab.
+The variable will be replaced with the series name or alias. 
+
+$__org:
+This variable is the ID of the current organization. ${__org.name} is the name of the current organization.
+
+$__user:
+${__user.id} is the ID of the current user. ${__user.login} is the login handle of the current user. ${__user.email} is the email for the current user.
+
+$__range:
+currently only supported for Prometheus and Loki data sources. This variable represents the range for the current dashboard.
+It is calculated by to - from. It has a millisecond and a second representation called $_range_ms and $_range_s.
+
+$__rate_interval:
+currently only supported for Prometheus data sources. The $__rate_interval variable is meant to be used in the rate function.
+
+
+$timeFilter or $__timeFilter
+The $timeFilter variable returns the currently selected time range as an expression. For example, the time range 
+interval - Last 7 days expression is "time > now() -7d".
+
+This is used in several places, including:
+- The WHERE clause for the influxDB data source. Grafana adds it automatically to influx DB queries when in Query Editor mode.
+You can add it manually in Text editor mode: Where $timeFilter. 
+- Log Analytics queries in the Azure Monitor data source.
+- SQL queries in MySQL, Postgres, and MSSQL.
+- The $__timeFilter variable is used in the MySQL data source. 
+
+------------------------------------------------------------------------------------------------------------------------------
+Transform data:
+Transformations are a powerful way to manipulate data returned by a query before the system applies a visulization. Using transformations, you can:
+- rename fields
+- Join time series data
+- Perform mathematical operations across queries
+- Use the output of one transformation as the input to another transformation
+
+For users that reply on multiple views of the same dataset, transformations offer an efficient method of creating and maintaining numerous dashboards.
+You can also use the output of one transformation as the input to another transformation, which results in a performance gain. 
+
+Grafana Data links?
+This function is  kind like a breakdown. For example, you had a summary dashboard for cpu status and virtual machines, you click one virtual machine status, 
+it'll pop up a 2nd dashboard/panel to show you more details. and this function is implemented by the Data links. link the detail panel to the summary pannel. 
+
+
+select name, region_id, create_time as "time" from scloud.datacenter;
+-- name: string - metric
+-- region_id: numeric - value
+-- create_time: - time series
+
+Grafana Custom Variables?
+variables can only be used in its dashboard.
+
+Dependent variables in Grafana:
+
+dependent variables means in a definition of an variable in a query statement, it'll use anthoer $variable. 
+fort example. I define servers as a variable, and I'll use $zone as a parameter.
+so in the query I'll use $zone, then we change $zone, the $servers variables will change accordingly.
+
+
+----------------------------------------------------------
+How to run grafana in a docker:
+1. creating a container
+You need to mount a Docker volume to store your persistent data and bind a port so you can access the service. 
+Settings can be supplied by mounting a config file into the container or injecting environment variables.
+
+docker run -d --name grafana -p 9000:3000 \
+           -v grafana-data:/var/lib/grafana \
+           grafana/grfana:8.3.0
+
+A Docker volume called "grafana-data" is referenced by the -v flag. It's mounted to "/var/lib/grafana" within the container, where Grafana stores all its generated data.
+The volume mount means the directory's contents will be stored outside the container, avoiding data loss when the container stops or your host restarts. 
+
+2. You can override Grafana's config keys by setting environment variables when you start your container. 
+   You can change any of the keys in Grafana's INI-format config files by capitalizing the key name and prepending GF_
+e.g.
+#INI file
+instance_name = my-grafana
+
+[security]
+admin_user = demo
+admin_password = grafana
+
+---
+# Corresponding environment variables
+GF_DEFAULT_INSTANCE_NAME=my-grafana     # Make sure you include the implicit "DEFAULT" section name when you're changing the value of a top-level variable in the config file. 
+GF_SECURITY_ADMIN_USER=demo
+GF_SECURITY_ADMIN_PASSWORD=grafana
+
+once you've worked out which value you want to change, supply the correct environment variables with "-e" flags when you start your container:
+
+docker run -d --name grafana -p 9000:3000 \
+       -e GF_DEFAULT_INSTANCE_NAME=my-grafana \
+       -e GF_SECURITY_ADMIN_USER=demo \
+       -e GF_SECURITY_ADMIN_PASSWORD=grafana \
+       -v grafana-data:/var/lib/grafana
+       grfana/grafana:8.3.0
+
+-----
+Grafana supports file-based configuration too. With this mechanism the value of the target environment variable becomes the path to a file available inside the container. 
+Grafana will obtain the setting's real value by reading the file. 
+To use this approach, modify any environment variable by suffix "__FILE" to its regular name:
+
+docker run -d --name grafana -p 9000:3000 \
+       -e GF_DEFAULT_INSTANCE_NAME=my-grafana \
+       -e GF_SECURITY_ADMIN_USER=demo \
+       -e GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/password
+       -v grafana-data:/var/lib/grafana
+       grafana/grafana:8.3.0
+
+
+You can add the file to the container using a bind mount (-v ./password.txt:/run/secrets/password) or a dedicated secrets management system such as "Docker Secrets". 
+File-based configuration provides a safer way to inject sensitive values that you'd rather not expose as plain text in CI job logs and your shell's history. 
+
+-----
+3. Overriding the config file
+You can always override Grafana's on-disk configuration file if you are changing too many values for environment variables to be convenient.
+The Docker image locates this file at "/etc/grafana/grafana.ini". You can mount replacement to the expected path using a Docker bind mount:
+
+docker run -d --name grafana -p 9000:3000 \
+       -v ./grafana.ini:/etc/grafana/grafana.ini \
+       -v grafana-data:/var/lib/grafana
+       grafana/grafana:8.3.0
+
+------
+4. Managing Plugins
+Managing Grafana installations require plugins that add extra data sources or provide pre-built dashboard panels. The Docker image includes a helper utility that lets you add
+plugins to a new container by setting a special environment variable.
+
+Here is how to add an official plugin that's listed in the Grafana catalog:
+
+docker run -d --name grafana -p 9000:3000 \
+       -e GF_INSTALL_PLUGINS=grafana-simple-json-datasource \
+       -v grafana-data:/var/lib/grafana \
+       grafana/grafana:8.3.0
+
+The "GF_INSTALL_PLUGINS" variable expects a comma-separated list of plugin names to install when the container first starts. The names will be passed to the "grafana-cli" 
+plugins install command. This means you can include version expression, such as "grafana-simple-json-datasource 1.1.0", and reference community plugins via their URL:
+
+docker run -d --name grafana -p 9000:3000 \
+       -e GF_INSTALL_PLUGINS=https://example.com/grafana-plugin.zip \
+       -v grafana-data:/var/lib/grafana \ 
+       grafana/grafana:8.3.0
+
+
+------
+5. Creating a custom image
+Manually biring up Grafana containers with configuration supplied via docker run flags is repetitive and error-prone. Building your own Docker image with your modifications 
+included saves time and centralizes settings when multiple team members need to be able to spin up a new instance. 
+You can achieve this by writing a Dockerfile that extends the offical grafana/grafana image. This gives you an opportunity to copy in a custom config file and set any extra 
+environment variables you need. 
+
+#e.g.
+FROM grafana/grafana:8.3.0
+
+# Add plugins
+ENV GF_INSTALL_PLUGINS=grafana-simple-json-datasource
+
+# Copy a config file from your working directory
+COPY grafana.ini /etc/grafana/grafana.ini
+
+Use your Dockerfile to build your new Grafana image:
+docker built -t custom-grafana:latest .
+
+Now you can start a preconfigured container instance from your image:
+docker run -d --name grafana -p 9000:3000 \
+       -v grafana-data:/var/lib/grafana \
+       custom-grafana:latest
+
+This approach is particular useful when you've made extensive modifications to your Grafana environment.
+
+
+-------------------------------------------
+User management:
+There are 3 types of organization roles in Grafana. The Grafana Admin is the global role, the default "admin" user has this role.
+- Grafana Admin: Manage organizations, users, and view server-wide settings
+- Organization Administrator: Manage data sources, teams, and users within an organization. 
+- Editor: create and edit dashboards
+- Viewer: view dashboards
+
+
+Roles and Permissions:
+You can assign a user one of three types of permissions:
+
+- Grafana server administrator permissions: Manage Grafana server-wide settings and resources
+
+- Organization permissions: Manage access to dashboards, alerts, plugins, teams, playlists, and other resources for an entire organization. The available roles are viewer, Editor, and Admin. 
+
+- Dashboard and folder permission: Manage access to dashboards and folders. 
+
+Grafana server administrators:
+- A Grafana server administrator manages server-wide settings and access to resources such as organizations, users, and licenses. 
+- Grafana includes a default server administrator that you can use to manage all of Grafana, or you can divide that responsibility among other server administrators that you create. 
+
+A server administrator can perform the following tasks:
+- Manage users and permissions
+- Create, edit, and delete organizations
+- view server-wide settings defined in the configuration file. 
+- View Grafana server statistics, including total users and active sessions
+- Upgrade the server to Grafana Enterprise. 
+
+Organization users and permissions:
+
+All Grafana users belong to at least one organization. An organization is an entity that exists within your instance of Grafana.
+
+Permissions assigned to a user within an organization control the extent to which the user has access to and can update the following organization resources:
+- dashboards and folders
+- alerts
+- playlists
+- users within that organization
+- data sources
+- teams
+- organization and team settings
+- plugins
+- annotations
+- library panels
+- API keys. 
+
+Organization roles:
+Organization role-based permissions are global, which means that each permissions level applies to all Grafana resources within an given organization. For example, an editor can see and update
+all dashboard in an organization. 
+For example, an editor can see an update all dashboards in an organization, unless those dashboards have been specifically restricted using "dashboard permissions". 
+
+
+Dashboard permissions:
+when you want to extend a viewer's ability to edit and save dashboard changes or limit an editor's permission to modify a dashboard, you can assign permissions to dashboards and dashboard folders.
+
+For example, you might want a certain viewer to be able to edit a dashboard. while that user can see all dashboards, you can grant them access to update only one of them. 
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+About Prometheus:
+- Prometheus is an open-source systems monitoring and alerting toolkit
+- Prometheus collects and stores its metrics as time series data
+- It provides out-of-the-box monitoring capabilities for the kubernetes container orchestration platform.
+
+
+
+echo "YWRtaW4=" | openssl base64 -d ; echo
+
+
+------------------------------------------------------------------------------------------------------------------------------
+

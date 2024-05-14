@@ -1,0 +1,215 @@
+(config)#ip vrf inet
+(config-vrf)#interface fa0/0
+(config-if)#ip vrf forwarding inet
+
+
+router ospfv3 4
+router-id 192.168.1.1
+address-family ipv4 unicast # enable the IPv4 address family under the router 
+
+# show ip protocols | include eigrp|Maximum
+
+# show ip eigrp topology 192.168.13.0/24
+
+
+For a route to be chosen as a feasible successor, one condition must be
+met: the neighbor's advertise distance(AD) for the route must be less than
+the successor's feasible distance(FD)
+
+Variance-unequal Cost
+"Alows EIGRP to load-balance across a networks successor router and one or more feasible successor routes".
+The variance value is based on the following logic:
+include any routes with a feasible distance less than "n" times that of the successor routes feasible distance.
+
+when you accidentally press ctrl+s at vim, everything will look like locked. to get out of this status, press ctrl+q. then it'll exit it.
+
+
+BGP: THe Resume
+1. Reliable Updates (TCP-Based, port 179)
+2. Triggered updates only (5 seconds internal, 30 seconds external)
+3. complicated "metric" for finding the best routes
+4. all neighbors are manually set up
+5. complex filters are typically used
+6. The routing protocol of the internet
+7. Management of trust and untrust
+8. Routing through autonomous systems instead of routers
+9. The slowest routing protocol in the world
+10. Primary service provider, but also enterprise customer
+
+
+How BGP neighbors Form
+1. Neighbors never 'discover' - manual config needed on both sides
+2. neighbor must be reachable on TCP 179
+3. Multiple sessions to the same neighbor not permitted (they will drop)
+4. multiple sessions to the same neighbor not permitted (they will drop)
+5. "Netowrk" command works differently with BGP than other routing protocols
+
+BGP run on top of IGP
+
+BGP Packets: OPEN, UPDATE, KEEPALIVE, NOTIFICATION
+BGP States: Idle, Active, Open Sent, Open Confirm, Established
+private AS (64512-65535)
+
+
+(config)# router bgp 500
+(config-router)# neighbor 150.1.1.1 remote-as 1111
+(config-router)# do show ip bgp summary
+(config-router)# neighbor 150.1.1.1 description ISP1
+(config-router)# neighbor 150.1.1.1 shutdown          # terminate the neighborship
+(config-router)# no neighbor 150.1.1.1 shutdown
+
+(config)# do show ip bgp
+
+BGP Attributes:
+
+well-known(standard-mandatory)
+Origin
+AS-Path
+Next-Hop
+
+
+Optional(discretion-Proprietary)
+local preference
+atomic aggregate
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+BGP Path Selection Process
+1. largest weight  (-cisco proprietary, it's all self contain meaning not advertise,it's on the router itself)
+2. highest local preference (local preference will be advertised inside the AS, it's inside the system)
+3. locally Originated 
+4. shortest AS Path
+5. Lowest Origin Type (i< e < ?)
+6. Lowest MED (metric)
+7. eBGP over iBGP
+8. Lowest IGP metric to neighbor  
+<Maximum paths check>
+9. Older route
+10. Lowest Router ID
+
+[we love orange As ot meds (1-6)]
+ebgp over ibgp
+lowest IGP metric
+<maximum paths check>
+older route
+lowest router id <--- the last ice breaker
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+SNMPv3
+
+-- create a view to monitor the interests MIB( OID/MID- what you can monitor).
+
+R1(config)# snmp-server view ALL-Access ?
+WORD MIB view family name
+R1(config)# snmp-server view ALL-Access 1.3.6.1.2.1.2.2.1.1 included
+R1(config)# no snmp-server view ALL-Access 1.3.6.1.2.1.2.2.1.1 included
+R1(config)# snmp-server view ALL-Access ifIndex included
+R1(config)# snmp-server view ALL-Access iso included
+R1(config)# snmp-server view ALL-Access ifEntry included
+
+
+-- create snmp server group
+R1(config)# snmp-server group GROUP1 v3 ?
+auth       group using the authNoPriv Security Level
+noauth     group using the noAuthNoPriv Security Level
+priv        group using SNMPv3 authPriv security Level
+
+R1(config)# snmp-server group GROUP1 v3 priv read ?
+Word read view name
+R1(config)# snmp-server gorup GROUP1 v3 priv read  ALL-Access
+
+--put a user in the group
+R1(config)# snmp-server user testuser1 GROUP1 v3 ?
+access     specify an access-list associated with this group
+auth       authentication parameters for the user
+encrypted  specifying passwords as MD5 or SHA digest
+<cr>
+
+
+R1(config)# snmp-server user testuser1 GROUP1 v3 auth ?
+md5      Use HMAC MD5 algorithm for authentication
+sha      Use HMAC SHA algorithm for authentication
+
+
+R1(config)# snmp-server user testuser1 GROUP1 v3 auth sha NinjaSNMP ?
+access      specify an access-list associated with this group
+priv        encryption parameters for the user
+<cr>
+
+R1(config)# snmp-server user testuser1 GROUP1 v3 auth sha NinjaSNMP priv ?      # NinjaSNMP is the password for testuser1
+des56       Use 56 bit DES algorithm for encryption
+
+
+R1(config)# snmp-server user testuser1 GROUP1 v3 auth sha NinjaSNMP priv des56 ?
+WORD       privacy password for user
+
+ 
+R1(config)# snmp-server user testuser1 GROUP1 v3 auth sha NinjaSNMP priv des56 goodkey
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Understanding PPPoE
+1. PPPoE has two distinct phases: discovery and session
+2. Discovery: PPPoE client does a "PADI/PADO" dance with PPPOE Server. (Cisco router send out PADI, DSLAM-the contorller, sent back the PADO)
+3. Session: PPPoE client negotiates options and authenticates
+4. Modern configurations use VPDN groups (start with 'vpdn enable')
+vpdn enable
+vpdn group test1 request dialout pppoe
+vpdn group test1 ppp authentication <pap/chap/mschap>
+vpdn group test1 localname ninja
+vpdn username ninja password secretninja store-local
+interface fa0/0
+  ip address pppoe setroute          # whatever ip you negotiate and use the default route, so it'll be route to internet
+  pppoe client vdpn group test1      # use the group name to authenticate
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Cisco EVN (easy vpn)
+what is Cisco EVN?
+1. an easy method to provide complete isolation between network segments
+    1) No VRF / VRF-lite
+    2) No BGP
+    3) No VLAN routing / Acls
+2. Higher-end switch feature (catalyst 4000 /6500/asr)
+3. reality: automation tool for doing vrf-lite
+
+Cisco EVN puts a "Friendly face" on vrf-lite (exactly like auto QoS)
+
+VRF lite configuration on a trunk port:
+interface gi1/1
+  ip address 10.5.5.1 255.255.255.0
+  ip pim sparse-mode
+
+interface gi1/1.51
+  description Subinterface for Group1
+  encapsulation dot1Q 51
+  ip vrf forwarding Group1
+  ip address 10.5.5.1 255.255.255.0
+  ip pim sparse-mode
+
+interface gi1/1.52
+  description Subinterface for Group2
+  encapsulation dot1Q 52
+  ip vrf forwarding Group2
+  ip address 10.5.5.1 255.255.255.0
+  ip pim sparse-mode
+
+ENV version - trunk port
+vrf definition group1
+  vnet tag 51
+vrf definition group2
+  vnet tag 52
+
+interface gi1/1
+  vnet trunk
+  ip address 10.5.5.1 255.255.255.0
+  pim sparse-address
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
+
+

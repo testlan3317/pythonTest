@@ -1,0 +1,22 @@
+# exectue a remote command on a host over ssh
+# ssh USER@HOST 'Command'
+
+e.g. 
+ssh root@192.x.x.x 'uptime'
+
+# SSH: Run multiple remote commands
+
+# ssh USER@HOST 'command1;command2;command3'
+
+#or
+# ssh USER@HOST <<EOF
+# command1
+# command2
+# command3
+# EOF
+
+e.g. 
+ssh root@192.x.x.x 'uptime; df -h'
+
+
+

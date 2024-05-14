@@ -1,0 +1,101 @@
+switch performance troubleshoot
+components of a catalyst switch
+1. Ports
+2. Forwarding Logic - ASICs
+3. BackPlane
+4. Control Plane
+
+
+Control Plane | (where all the intelligent resides in the switch)-this is something we must think to guard.
+----------------------------------------------------------------------------------------------------------
+Data Plane    | (governed by the ASICs, where your ports coming in and the MAC)
+
+s1# config t
+s1(config)# do show interface counters      # quick way to diagnose slowniess issue. this give you a quick view on what interfaces are doing what
+s1(config)# do show interface counters errors   # shows errors statistics for the interfaces
+
+-- duplex mismatch
+s1# show interfaces | include half
+
+Switch TCAM Troubleshooting
+1. switch backplane rarely cause an issue; TCAM (ASICs) tables can max out
+2. when the TCAM table is Full, traffic goes to CPU (PUNTING)
+3. Punting is a normal condition ( SSH, Routing protocols, CDP, ETC...)
+4. "Switch Death" can occur when you use a low-end switch in place of a high-end switch to save money
+5. verify correct SDM template is in place for your required features
+6. Verify TCAM utilization
+
+
+s1# show sdm prefer
+
+s1(config)# sdm prefer ?
+access               Access bias
+default              Default bias
+dual-ipv4-and-ipv6   Support both IPv4 and IPv6
+ipe                  IPe bias
+routing              Unicast bias
+vlan                 VLAN bias
+
+-- check tcam utilization
+s1# show platform tcam utilization
+
+++++++++++++++++++++++++++++++++++++++
+CPU utilization
+1. switch cpu utilization matters - it should remain low
+2. cisco recommended 5% -10% maximum levels of processing
+3. what could cause high cpu?
+   1) Tcam overload (STP loop?)  2) Debug command left running  3) frequent routing or FHRP updates 4) Frequent SNMP Scans
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Router Performance Troubleshooting:
+
+R1# show processes cpu
+
+R1# show processes cpu | exclude 0.00%
+R1# show processes cpu | include ^CPU|^ PID|ARP IN
+R1# show processes cpu | include ^CPU|^ PID|Net Back
+R1# show processes cpu | include ^CPU|^ PID|IP Back
+R1# show processes cpu | include ^CPU|^ PID|TCP Tim
+R1# shwo processes history
+
+High CPU Utilization Sources
+1. ARP Input Process - A flurry of arp packets; can be caused by a default router pointed at an out ethernet interface
+2. Net background process - when an interface queue is Full, Net background pulls from a a 'Global' Buffer (causes cpu interruppt)
+3. IP Background process - Handles Interface UP/Down states
+4. TCP Timer process - manages developing and current tcp connections to the router
+
+High Memory Utilization Sources:
+1. cause of memory shortages: not meeting minimum requirement for IOS version you are running
+2. cause of memory shortages: memory leak (ios bug)
+3. cause of memory shortages: buffer leak (ios bug)
+4. cause of memory shortages: bgp (Giant Routing table)
+R1# show processes memory
+
+sw1(config)# int fa2/0/2
+sw1(config-if)# switchport trunk allowed vlan ?
+WORD     VLAN IDs of the allowed VLANs when this port is in turnking mode
+add      add VLANs to the current list
+all      all VLANs
+except   all VLANs except the following
+none     no VLANs
+remove   remove VLANs from the current list
+
+sw1(config-if)# switchport trunk allow valn add 1,4,6,8
+
+sw1# show interfaces trunk
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

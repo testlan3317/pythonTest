@@ -1,0 +1,87 @@
+Traits
+Traits are a structural construct of the language which allow 
+1. composition of behaviors
+2. Runtime implementation of interfaces
+3. Compatibility with static type checking/compilation
+
+trait Marks{
+    void DisplayMarks(){
+        println("Display Marks");
+    }
+}
+One can use the "implements" keyword to implement the trait in the similar way as interfaces
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+        st.Marks1 = 10;
+        println(st.DisplayMarks());
+    }
+}
+
+trait Marks{
+    int Marks1; // trait may define properties
+
+    void DisplayMarks(){
+        println("Display Marks");
+    }
+}
+
+class Student implements Marks{
+    int StudentID;
+}
+
+Composition of Behaviors
+Traits can be used to implement multiple inheritance in a controlled way, avoiding the diamond issue.
+
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+        st.Marks1 = 10;
+        println(st.DisplayMarks());
+    }
+}
+
+trait Marks{
+    void DisplayMarks(){
+        println("Marks1");
+    }
+}
+trait Total{
+    void DisplayTotal(){
+        println("Total");
+    }
+}
+class Student implements Marks, Total{
+    int StudentID;
+}
+
+Extending Traits
+Traits may extend another trait, in which case you must use the "extends" keyword. 
+
+
+class Example{
+    static void main(String[] args){
+        Student st = new Student();
+        st.StudentID = 1;
+        st.Marks1 = 10;
+        println(st.DisplayMarks());
+    }
+}
+
+trait Marks{
+    void DisplayMarks(){
+        println("Marks1");
+    }
+}
+trait Total extends Marks{
+    void DisplayMarks(){
+        println("Total");
+    }
+}
+class Student implements Marks, Total{
+    int StudentID;
+}
+
+

@@ -1,0 +1,155 @@
+Elasticsearch requires very little configuration to get started, but there are a number of items which must be considered before using your cluster in production:
+
+1. Path Settings:
+eleasticsearch writes the data you index to indices and data streams to a "data" directory. Elasticsearch writes its own application logs, which contains information bout 
+cluster health and operations, to a "log" directory.
+
+For macOS .tar.gz, Linux .tar.gz, and windows .zip installations, "data" and "log" are subdirectories of $ES_HOME by default. However, files in $ES_HOME risk deletion during an upgrade.
+
+In production, we strongly recommend you set the path.data and path.logs in the "elasticsearch.yml" to locations outside of $ES_HOME. 
+
+path:
+  data: /var/data/elasticsearch
+  logs: /var/log/elasticsearch
+
+
+2. Multiple data paths:
+If needed, you can specify multiple paths in "path.data". Elasticsearch stores the node's data across all provided paths but keeps each shard's data on the same path.
+
+Elasticsearch does not balance shards across a node's data paths. High disk usage in a single path can trigger a "high disk usage watermark" for the entire node. If triggered, Elasticsearch
+will not add shards to the node, even if the node's other paths have available disk space. If you need additional disk space, we recommend you add a new node rather than additional data path.
+
+path:
+  data:
+    - /mnt/elasticsearch_1
+    - /mnt/elasticsearch_2
+    - /mnt/elasticsearch_3
+
+support for multiple data paths was deprecated in 7.13 and will be removed in the a future release.
+
+3. cluster name setting:
+A node can only join a cluster when it shares its cluster.name with all the other nodes in the cluster. The default name is elasticsearch.
+cluster.name: logging-prod
+
+4. Node name setting:
+Elasticsearch uses "node.name" as human-readable identifier for a particular instance of Elasticsearch. This name is included in the reponse of many APIs.
+The node name defaults to the machine's hostname, but can be changed
+node.name: prod-data-2
+
+5. network host setting:
+By default, Elasticsearch only binds to loopback addresses such as 127.0.0.1 and [::1]. This is sufficient to run a cluster of one or more nodes on a single server for development 
+and testing, but a resilient production cluster must involve other nodes on other servers. There are many network settings but ususally all you neeed to configure is "network.host":
+network.host: 192.168.1.10
+
+Important: when you provide a value of network.host, elasticsearch assumes that you are moving from development mode to production mode, and upgrades a number of system startup checks from
+warnings to exceptions.
+
+6. Discovery and cluster formation settings:
+configure two important discovery and cluster formation settings before going to production so that nodes in the cluster can discover each other and elect a master node.
+
+discovery.seed_hosts
+
+Out of the box, without any network configuration, Elasticsearch will bind to the available loopback addresses and scan local ports 9300 to 9305 to connect with other nodes running on the
+same server. This behavior provides an auto-clustering experience without having to do any configuration.
+
+when you want to form a cluster with nodes on other hosts, use the static "discovery.seed_hosts" setting. This setting provides a list of other nodes in the cluster that are master-eligible
+and likely to be live and contactable to seed the discovery process.
+
+discovery.seed_hosts:
+  - 192.168.1.10:9300
+  - 192.168.1.11
+  - seeds.mydomain.com
+  - [0:0:0:0:0:ffff:c0a8:10c]:9301
+
+
+if a hostname resolves to multiple IP addresses, the node will attempt to discover other nodes at all resolved addresses.
+
+
+discovery.seed_hosts:
+  - 192.168.1.10:9300
+  - 192.168.1.11
+  - seeds.mydomain.com
+  - [0:0:0:0:0:ffff:c0a8:10c]:9301
+discovery.initial_master_nodes:
+  - master-node-a
+  - master-node-b
+  - master-node-c
+
+Identify the initial master nodes by their node.name, which defaults to their hostname. Ensure that the value in "cluster.initial_master_nodes" matches the node.name exactly. If you use
+a full-qualified domain name such as master-node-a.example.com for your node names, then you must use the FQDN in this list.
+
+7. JVM heap dump path setting:
+By default, Elasticsearch configures the JVM to dump the heap on out of memory exceptions to the default data directory. On RPM and DEBIAN packages, the data directory is 
+"/var/lib/elasticsearch".  On linux and MacOS and windows distributions, the "data" directory is located under the root of the elasticsearch installation.
+
+if this path is not suitable for receiving heap dumps, modify the -XX:HeapDumpPath=... entry in jvm.options:
+1) if you specify a directory, the JVM will generate a filename for the heap dump based on the PID of the running instance
+2) if you specify a fixed filename instead of a directory, the file must not exist when the JVM needs to perform a heap dump on an out of memory exception. Otherwise, the heap dump will fail.
+
+
+Circuit breaker settings:
+Elasticsearch contains multiple circuit breakers used to prevent operations from causing an OutOfMemoryError. Each breaker specifies a limit for how much memory it can use. Additionally,
+there is a parent-level breaker that specifies the total amount of memory that can be used across all breakers.
+Except where noted otherwise, these settings can be dynamically updated on a live cluster with the cluster-update-settings API.
+
+Shard allocation:
+shard allocation is the process of allocating shards to nodes. This can happen during initial recovery, replica allocation, rebalancing, or when nodes are added or removed. 
+One of the main roles of the master is to decide which shards to allocate to which nodes, and when to move shards between nodes in order to rebalance the cluster.
+
+there are a number of settings available to control the shard allocation process:
+1) Cluster-level shard allocation settings: control allocation and rebalancing operations
+2) Disk-based shard allocation settings: explains how Elasticsearch takes available disk space into account, and the related settings
+3) Shard allocation awareness and Forced awareness: control how shards can be distributed across different racks or availability zones.
+4) Cluster-level shard allocation filtering: allows certain nodes or groups of nodes excluded from allocation so that they can be decommissioned.
+
+-----------------------------------------------------------------------
+Discovery and cluster formation are affected by the following settings:
+
+discovery.seed_hosts:
+(Static) provides a list of addresses of the master-eligible nodes in the cluster. May also be a single string containning the addresses separated by commas.
+
+discovery.seed_providers:
+(Static) Specifies which types of seed host provider to use to obtain the addresses of the seed nodes used to start the discovery process. By default, it is the "settings-based seed hosts
+provider" which obtains the seed node addresses from the "discovery.seed_hosts" setting.
+
+it has "setting-based seed host provider" and "File-based seed hosts provider" 
+
+
+discovery.type:
+(Static) specifies whether Elasticsearch should form a multiple-node cluster. Defaults to "multi-node", which means that Elasticsearch discovers other nodes when forming a cluster and allows
+other nodes to join the cluster later. If set to "single-node", elasticsearch forms a single-node cluster and suppresses the timeout set by "cluster.publish.timeout".
+
+cluster.initial_master_nodes:
+(Static) sets the initial set of master-eligible nodes in a brand-new cluster. By default this list is empty, meaning that this node expects to join a cluster that has already been
+bootstrapped. Remove this setting once the cluster has formed. Do not use this setting when restarting nodes or when adding new nodes to an existing cluster.
+
+
+Bootstrapping a cluster:
+Starting an Elasticsearch cluster for the very first time requires the initial set of master-eligible nodes to be explicitly defined on one or more of the master-eligible nodes in the cluster.
+This is known as cluster bootstrapping. This is only required the first time a cluster starts up. Freshly-started nodes that are joining a running cluster obtain this information from the 
+cluster's elected master.
+The initial set of master-eligible nodes is defined in the "cluster.initial_master_nodes" setting. 
+
+--------------------------------------
+To enroll new nodes in your cluster, create an enrollment token with the "elasticsearch-create-enrollment-token" tool on any existing node in your cluster. You can then start a new node with
+the "--enrollment-token" parameter so that it joins an existing cluster
+
+1. in a separate terminal from where the Elasticsearch is running, navigate to the directory where you installed Elasticsearch and run the "elasticsearch-create-enrollment-token" tool to 
+generate an enrollment token for your new nodes.
+    bin\elasticsearch-create-enrollment-token -s node
+ copy the enrollment token, which you'll use to enroll new nodes with your elasticsearch cluster
+2. From the installation directory of your new node, start Elasticsearch and pass the enrollment token with the "--enrollment-token" parameter
+    bin\elasticsearch --enrollment-token <enrollment-token>
+   Elasticsearch automatically generates certificates and keys in the following directory:
+    config\certs
+3. Repeat the previous step for any new nodes that you want to enroll
+
+
+
+
+
+
+
+
+
+
