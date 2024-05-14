@@ -115,7 +115,7 @@ print(txt.translate(mytable))
 print("===============strip===================")
 
 # strip()
-# removes any leanding and trailling characters
+# removes any leading and trailling characters
 # txt.strip(characters)
 # character - optional. A set of characters to remove as leading/trailing characters
 txt = ",,,,,rrttgg.....banana....rrr"
