@@ -89,7 +89,7 @@ print("================delattr() end=====================")
 
 x = ('apple', 'banana', 'cherry')
 y = enumerate(x)
-#print(list(y))
+# print(list(y))  # print result: [(0, 'apple'), (1, 'banana'), (2, 'cherry')]
 print(list(y)[0][1])
 
 # eval()
