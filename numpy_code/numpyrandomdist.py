@@ -4,7 +4,7 @@
 # Probability Density Function: A function that describes a continuous probability.
 
 # choice() method allows us to specify the probability for each value
-# probability ise set by a number between 0 and 1. 0 means value never occur, 1 means the value will always occur
+# probability is set by a number between 0 and 1. 0 means value never occur, 1 means the value will always occur
 
 from numpy import random
 
