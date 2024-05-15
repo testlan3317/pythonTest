@@ -57,3 +57,36 @@ if __name__ == '__main__':
         # perform same transaction process 10 times
         perform_transactions()
 
+
+'''
+
+About variable _
+
+Underscore _ is considered as "I don't care" or "throwaway" variable in Python
+
+It's just a variable name, and it's conventional in python to use _ for throwaway variables. It just indicates that the loop variable isn't actually used.
+
+
+The python interpreter stores the last expression value to the special variable called _.
+
+>>> 10
+10
+
+>>> _
+10
+
+>>> _ * 3
+30
+The underscore _ is also used for ignoring the specific values. If you don’t need the specific values or the values are not used, just assign the values to underscore.
+
+Ignore a value when unpacking
+
+x, _, y = (1, 2, 3)
+
+>>> x
+1
+
+>>> y
+3
+
+'''

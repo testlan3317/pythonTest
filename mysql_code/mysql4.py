@@ -39,9 +39,9 @@ val = ("FGVM04TM22090163", "burnaby", -8, 1, 26, 27, 0, create_time)
 mycursor.execute(sql, val)    # cursor.execute()  single
 # mycursor will only remeber the last execute return
 vals = [
-("FGVM04TM22090164", "burnaby", -8, 1, 23, 24, 0, create_time),
-("FGVM04TM22090165", "burnaby", -8, 1, 28, 29, 0, create_time),
-("FGVM04TM22090166", "burnaby", -8, 1, 21, 22, 0, create_time),
+("FGVM04TMXXXXX", "burnaby", -8, 1, 23, 24, 0, create_time),
+("FGVM04TMXXXXX", "burnaby", -8, 1, 28, 29, 0, create_time),
+("FGVM04TMXXXXX", "burnaby", -8, 1, 21, 22, 0, create_time),
         ]
 
 mycursor.executemany(sql, vals)   # cursor.executemany()  for multiple records
