@@ -54,3 +54,9 @@ print(mycursor.rowcount, "record inserted.")   # cursor.rowcount --> get inserte
 print("last row id", mycursor.lastrowid)
 
 mydb.close()
+
+'''
+You must use %d for integer values and %s for string values.
+
+You can also use %f for floating point value, %b for binary data and %% Just to insert a percent symbol.
+'''
